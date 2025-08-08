@@ -201,10 +201,11 @@ def get_operation(ctx: UmamusumeContext) -> TurnOperation | None:
         medic = True
 
     trip = False
-    if not ctx.cultivate_detail.turn_info.medic_room_available and (ctx.cultivate_detail.turn_info.date <= 36 and ctx.cultivate_detail.turn_info.motivation_level.value <= 3 and ctx.cultivate_detail.turn_info.remain_stamina < 90 and not support_card_max >= 3
-                                                                    or 40 < ctx.cultivate_detail.turn_info.date <= 60 and ctx.cultivate_detail.turn_info.motivation_level.value <= 4 and ctx.cultivate_detail.turn_info.remain_stamina < 90
-                                                                    or 64 < ctx.cultivate_detail.turn_info.date <= 99 and ctx.cultivate_detail.turn_info.motivation_level.value <= 4 and ctx.cultivate_detail.turn_info.remain_stamina < 90):
+    if not ctx.cultivate_detail.turn_info.medic_room_available and (ctx.cultivate_detail.turn_info.date <= 36 and ctx.cultivate_detail.turn_info.motivation_level.value < ctx.cultivate_detail.motivation_threshold_year1 and ctx.cultivate_detail.turn_info.remain_stamina < 90 and not support_card_max >= 3
+                                                                    or 40 < ctx.cultivate_detail.turn_info.date <= 60 and ctx.cultivate_detail.turn_info.motivation_level.value < ctx.cultivate_detail.motivation_threshold_year2 and ctx.cultivate_detail.turn_info.remain_stamina < 90
+                                                                    or 64 < ctx.cultivate_detail.turn_info.date <= 99 and ctx.cultivate_detail.turn_info.motivation_level.value < ctx.cultivate_detail.motivation_threshold_year3 and ctx.cultivate_detail.turn_info.remain_stamina < 90):
         trip = True
+        log.info(f"🎯 Trip triggered - Current motivation: {ctx.cultivate_detail.turn_info.motivation_level.value}, Thresholds: Y1={ctx.cultivate_detail.motivation_threshold_year1}, Y2={ctx.cultivate_detail.motivation_threshold_year2}, Y3={ctx.cultivate_detail.motivation_threshold_year3}")
 
     rest = False
     if ctx.cultivate_detail.turn_info.remain_stamina <= 48:

@@ -27,8 +27,20 @@ def after_hook(ctx: UmamusumeContext):
                 ctx.cultivate_detail.turn_info.log_turn_info(ctx.task.detail.scenario)
                 ctx.cultivate_detail.turn_info.turn_info_logged = True
             if ctx.cultivate_detail.turn_info.turn_operation is None:
-                ctx.cultivate_detail.turn_info.turn_operation = get_operation(ctx)
-                ctx.cultivate_detail.turn_info.turn_operation.log_turn_operation()
+                # Only get operation if we haven't already decided on training
+                # This prevents AI from overriding training decisions with race decisions
+                # Also check if we're in training selection screen - don't override training decisions there
+                from module.umamusume.asset.template import UI_CULTIVATE_TRAINING_SELECT
+                in_training_select = image_match(img, UI_CULTIVATE_TRAINING_SELECT).find_match
+                
+                if not in_training_select:
+                    log.info(f"🔍 Not in training selection screen - calling AI decision")
+                    log.info(f"🔍 Extra race list: {ctx.cultivate_detail.extra_race_list}")
+                    log.info(f"🔍 Debut race win status: {ctx.cultivate_detail.debut_race_win}")
+                    ctx.cultivate_detail.turn_info.turn_operation = get_operation(ctx)
+                    ctx.cultivate_detail.turn_info.turn_operation.log_turn_operation()
+                else:
+                    log.info("🔍 In training selection screen - skipping AI decision to avoid overriding training")
 
 
 

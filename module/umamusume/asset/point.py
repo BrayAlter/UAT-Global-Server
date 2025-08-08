@@ -68,6 +68,7 @@ SKIP_CONFIRM = ClickPoint(ClickPointType.CLICK_POINT_TYPE_COORDINATE,None, Coord
 CULTIVATE_OPERATION_COMMON_CONFIRM = ClickPoint(ClickPointType.CLICK_POINT_TYPE_COORDINATE, None, Coordinate(520, 835), "Cultivation Operation Common Confirm", None)
 RACE_RECOMMEND_CONFIRM = ClickPoint(ClickPointType.CLICK_POINT_TYPE_COORDINATE, None, Coordinate(365, 1185), "Race Recommendation Function Confirm", None)
 CULTIVATE_TRIP_WITH_FRIEND = ClickPoint(ClickPointType.CLICK_POINT_TYPE_COORDINATE, None, Coordinate(370, 455), "Outing Trip - Select Friend", None)
+CULTIVATE_TRIP_WITH_FRIEND_COMPLETE = ClickPoint(ClickPointType.CLICK_POINT_TYPE_COORDINATE, None, Coordinate(406, 597), "Outing Trip - Friend Complete", None)
 RACE_FAIL_CONTINUE_USE_CLOCK = ClickPoint(ClickPointType.CLICK_POINT_TYPE_COORDINATE,None, Coordinate(520,905), "Use Clock - Confirm", None)
 RACE_FAIL_CONTINUE_CANCEL = ClickPoint(ClickPointType.CLICK_POINT_TYPE_COORDINATE,None, Coordinate(200,905), "Use Clock - Cancel", None)
 CULTIVATE_RECEIVE_CUP_CLOSE = ClickPoint(ClickPointType.CLICK_POINT_TYPE_COORDINATE,None, Coordinate(365,920), "Receive Cup - Close", None)

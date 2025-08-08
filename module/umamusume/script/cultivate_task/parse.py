@@ -65,7 +65,7 @@ def parse_date(img, ctx: UmamusumeContext) -> int:
             sub_img_turn_to_race = cv2.copyMakeBorder(sub_img_turn_to_race, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None,
                                                       (255, 255, 255))
             turn_to_race_text = ocr_line(sub_img_turn_to_race)
-            if turn_to_race_text == "比赛日":
+            if turn_to_race_text == "Race Day":
                 log.debug("Debut race day")
                 return 12
             turn_to_race_text = re.sub("\\D", "", turn_to_race_text)
@@ -147,7 +147,7 @@ def parse_date(img, ctx: UmamusumeContext) -> int:
             sub_img_turn_to_race = cv2.copyMakeBorder(sub_img_turn_to_race, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None,
                                                       (255, 255, 255))
             turn_to_race_text = ocr_line(sub_img_turn_to_race)
-            if turn_to_race_text == "比赛日":
+            if turn_to_race_text == "Race Day":
                 log.debug("URA Debut race day")
                 return 12
             turn_to_race_text = re.sub("\\D", "", turn_to_race_text)

@@ -6,7 +6,7 @@ import numpy as np
 
 from bot.base.task import TaskStatus, EndTaskReason
 from module.umamusume.asset.point import *
-from module.umamusume.types import TurnInfo
+from module.umamusume.types import TurnInfo, TurnOperationType, TurnOperation
 from module.umamusume.script.cultivate_task.const import SKILL_LEARN_PRIORITY_LIST
 from module.umamusume.script.cultivate_task.event.manifest import get_event_choice
 from module.umamusume.script.cultivate_task.parse import *
@@ -30,6 +30,21 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
     # Parse main interface
     if not ctx.cultivate_detail.turn_info.parse_main_menu_finish:
         parse_cultivate_main_menu(ctx, img)
+        
+        # Check for recreation friend notification if prioritize_recreation is enabled
+        if ctx.cultivate_detail.prioritize_recreation:
+            img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            from module.umamusume.asset.template import UI_RECREATION_FRIEND_NOTIFICATION
+            result = image_match(img_gray, UI_RECREATION_FRIEND_NOTIFICATION)
+            log.info(f"🔍 Recreation friend notification detection: {result.find_match}")
+            
+            if result.find_match:
+                log.info("🏖️ Recreation friend notification detected - prioritizing trip")
+                # Set trip operation to prioritize recreation
+                ctx.cultivate_detail.turn_info.turn_operation = TurnOperation()
+                ctx.cultivate_detail.turn_info.turn_operation.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_TRIP
+                
+            ctx.cultivate_detail.turn_info.parse_main_menu_finish = True
 
     from module.umamusume.asset.race_data import get_races_for_period
     # Check if there are extra races available for current time period
@@ -65,6 +80,13 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
     else:
         ctx.cultivate_detail.reset_skill_learn()
 
+    # Check for trip operation first (prioritize recreation)
+    turn_operation = ctx.cultivate_detail.turn_info.turn_operation
+    if turn_operation is not None and turn_operation.turn_operation_type == TurnOperationType.TURN_OPERATION_TYPE_TRIP:
+        log.info("🏖️ Executing prioritized trip operation")
+        ctx.ctrl.click_by_point(CULTIVATE_TRIP)
+        return
+
     if not ctx.cultivate_detail.turn_info.parse_train_info_finish:
         if has_extra_race or ctx.cultivate_detail.turn_info.remain_stamina < 48:
             ctx.cultivate_detail.turn_info.parse_train_info_finish = True
@@ -73,7 +95,7 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
             ctx.ctrl.click_by_point(TO_TRAINING_SELECT)
             return
 
-    turn_operation = ctx.cultivate_detail.turn_info.turn_operation
+    # Check other turn operations
     if turn_operation is not None:
         if turn_operation.turn_operation_type == TurnOperationType.TURN_OPERATION_TYPE_TRAINING:
             ctx.ctrl.click_by_point(TO_TRAINING_SELECT)
@@ -260,6 +282,11 @@ def script_cultivate_training_select(ctx: UmamusumeContext):
             # Let the AI decide based on stamina, motivation, etc.
             # The AI will choose the best action (training, rest, medic, trip)
             return
+    else:
+        # No operation decided yet - go back to main menu to let AI decide
+        log.info("🤔 No operation decided yet - returning to main menu for AI decision")
+        ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
+        return
     
     if not ctx.cultivate_detail.turn_info.parse_main_menu_finish:
         ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)

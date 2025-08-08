@@ -41,6 +41,7 @@ This project is a **Global Server adaptation** of the original China Server vers
 - **Event Choice Picker**: Smart event selection for optimal training
 - **70% English Translation**: Major UI and system text translated to English
 - **Auto Device Selection**: Interactive ADB device detection and selection
+- **🎮 Manual Skill Purchase**: New feature allowing manual skill selection at the end of career while maintaining automatic skill learning during normal training
 
 ### 🔄 **Current Limitations**
 - **Uma Musume Selection**: Must be done manually in-game (not yet automated)
@@ -53,6 +54,7 @@ This project is a **Global Server adaptation** of the original China Server vers
 - ✅ **Automatic Training**: Complete training scenarios for all Uma Musume
 - ✅ **Customizable Targets**: Training attributes, racing tactics, additional races
 - ✅ **Skill Learning**: Optimized skill acquisition for 3-star spark farming
+- ✅ **Manual Skill Purchase**: Option to manually select skills at career end while keeping auto-learning during training
 - ✅ **Inheritance Compatibility**: Improved training strategy support
 
 ### **Advanced Web Interface**
@@ -60,6 +62,7 @@ This project is a **Global Server adaptation** of the original China Server vers
 - 📊 **Real-time Monitoring**: Live task status and progress tracking
 - ⚙️ **Easy Configuration**: Intuitive settings and preset management
 - 🎯 **Character Filter**: Filter races based on selected character (manual select on UAT web)
+- 🔔 **Web Notifications**: Modern notification system for manual skill purchase
 
 ## 📦 **Installation & Setup**
 
@@ -129,6 +132,7 @@ Access the web interface at `http://127.0.0.1:8071` to configure and start tasks
 - **Attribute Setting**: Set you desire attributes in the UAT interface, if you have no idea then try manual training first and put the result attribute value in the UAT interface
 - **Race Selection RECOMENDED**: Configure you race schedule, this is very necessary to avoid lack of fans in the next goal, consider using the character filter in the race menu, Don't worry when using the character filter, because the filter has been adjusted to the position and terrain of the field that the character masters, and has also been adjusted to the character's free schedule.
 - **Skill Optimization**: Set your desire skill, consider the priority 0 = the bot will buy the desire skill first
+- **Manual Skill Purchase**: Check "Purchase skill manually at the end of career" to manually select final skills while keeping auto-learning during training
 
 ## 🔧 **Troubleshooting**
 
@@ -189,6 +193,7 @@ Access the web interface at `http://127.0.0.1:8071` to configure and start tasks
 - ✅ **Performance Optimization**: JSON-based data loading
 - ✅ **Error Handling**: Robust fail-safe mechanisms
 - ✅ **Smart Device Detection**: Automatic ADB device selection
+- ✅ **Manual Skill Purchase**: New feature for manual skill selection at career end
 
 ## 🤝 **Contributing**
 

@@ -174,6 +174,60 @@
                 </div>
               </div>
             </div>
+            <div class="form-group">
+              <div>⭐ Desire Mood (Customize the desire Mood per year)</div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <div class="form-group">
+                  <label for="motivation-year1">Year 1</label>
+                  <select v-model="motivationThresholdYear1" class="form-control" id="motivation-year1">
+                    <option :value=1>Awful</option>
+                    <option :value=2>Bad</option>
+                    <option :value=3>Normal</option>
+                    <option :value=4>Good</option>
+                    <option :value=5>Great</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col">
+                <div class="form-group">
+                  <label for="motivation-year2">Year 2</label>
+                  <select v-model="motivationThresholdYear2" class="form-control" id="motivation-year2">
+                    <option :value=1>Awful</option>
+                    <option :value=2>Bad</option>
+                    <option :value=3>Normal</option>
+                    <option :value=4>Good</option>
+                    <option :value=5>Great</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col">
+                <div class="form-group">
+                  <label for="motivation-year3">Year 3</label>
+                  <select v-model="motivationThresholdYear3" class="form-control" id="motivation-year3">
+                    <option :value=1>Awful</option>
+                    <option :value=2>Bad</option>
+                    <option :value=3>Normal</option>
+                    <option :value=4>Good</option>
+                    <option :value=5>Great</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <div class="form-group">
+                  <div class="form-check">
+                    <input type="checkbox" v-model="prioritizeRecreation" class="form-check-input" id="prioritizeRecreation">
+                    <label class="form-check-label" for="prioritizeRecreation">
+                      ⭐ Prioritize Recreation (Pal Type Support Card)
+                    </label>
+                  </div>
+                  <small class="form-text text-muted">(optional) only use this if you bring Pal type Support Card like Tazuna in Career</small>
+                </div>
+              </div>
+            </div>
             <div>
               <div class="form-group">
                 <div class="advanced-options-header" @click="switchAdvanceOption">
@@ -1026,6 +1080,12 @@ export default {
       extraWeight2: [0, 0, 0, 0, 0],
       extraWeight3: [0, 0, 0, 0, 0],
 
+      // Motivation thresholds for trip decisions
+      motivationThresholdYear1: 3,
+      motivationThresholdYear2: 4,
+      motivationThresholdYear3: 4,
+      prioritizeRecreation: false,
+
       // URA配置
       skillEventWeight: [0, 0, 0],
       resetSkillEventWeightList: '',
@@ -1515,6 +1575,11 @@ export default {
           "allow_recover_tp": this.recoverTP,
           "learn_skill_only_user_provided": this.learnSkillOnlyUserProvided,
           "extra_weight": [this.extraWeight1, this.extraWeight2, this.extraWeight3],
+          // Motivation thresholds for trip decisions
+          "motivation_threshold_year1": this.motivationThresholdYear1,
+          "motivation_threshold_year2": this.motivationThresholdYear2,
+          "motivation_threshold_year3": this.motivationThresholdYear3,
+          "prioritize_recreation": this.prioritizeRecreation,
           // 限时: 富士奇石的表演秀
           "fujikiseki_show_mode": this.fujikisekiShowMode,
           "fujikiseki_show_difficulty": this.fujikisekiShowDifficulty,
@@ -1559,6 +1624,12 @@ export default {
         this.selectedRaceTactic2 = this.presetsUse.race_tactic_2,
         this.selectedRaceTactic3 = this.presetsUse.race_tactic_3,
         this.skillLearnBlacklist = this.presetsUse.skill_blacklist
+
+      // Load motivation thresholds (with defaults)
+      this.motivationThresholdYear1 = parseInt(this.presetsUse.motivation_threshold_year1) || 3
+      this.motivationThresholdYear2 = parseInt(this.presetsUse.motivation_threshold_year2) || 4
+      this.motivationThresholdYear3 = parseInt(this.presetsUse.motivation_threshold_year3) || 4
+      this.prioritizeRecreation = this.presetsUse.prioritize_recreation || false
 
       if ('extraWeight' in this.presetsUse && this.presetsUse.extraWeight != []) {
         this.extraWeight1 = this.presetsUse.extraWeight[0].map(v => Math.max(-1, Math.min(1, v)));
@@ -1726,6 +1797,11 @@ export default {
           this.extraWeight2.map(v => Math.max(-1, Math.min(1, v))),
           this.extraWeight3.map(v => Math.max(-1, Math.min(1, v)))
         ],
+        // Motivation thresholds for trip decisions
+        motivation_threshold_year1: this.motivationThresholdYear1,
+        motivation_threshold_year2: this.motivationThresholdYear2,
+        motivation_threshold_year3: this.motivationThresholdYear3,
+        prioritize_recreation: this.prioritizeRecreation,
         // New skill system data
         selectedSkills: [...this.selectedSkills],
         blacklistedSkills: [...this.blacklistedSkills],

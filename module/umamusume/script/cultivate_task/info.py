@@ -276,12 +276,30 @@ def script_info(ctx: UmamusumeContext):
             # For Oguri Cap G1 race goals, go to race selection instead of failing
             log.info("🏆 Goal Not Reached detected - navigating to races to fulfill G1 requirements")
             
-            # Get current date and calculate next period
-            current_date = ctx.cultivate_detail.turn_info.date
-            next_period = current_date + 1
+            # Close popup to return to main menu where date is visible
+            ctx.ctrl.click_by_point(WIN_TIMES_NOT_ENOUGH_RETURN)
+            time.sleep(2)  # Wait longer for main menu to fully load
+            
+            # Refresh screen to get the actual main menu
+            ctx.current_screen = ctx.ctrl.get_screen()
+            
+            # Read actual current date from main menu
+            from module.umamusume.script.cultivate_task.parse import parse_date
+            current_date = parse_date(ctx.current_screen, ctx)
+            if current_date == -1:
+                log.warning("Failed to parse date from main menu")
+                return
+            
+            # Use current period for race planning (no +1 needed)
+            next_period = current_date
+            
+            # Update context with accurate date
+            ctx.cultivate_detail.turn_info.date = current_date
+            
             current_date_name = get_date_name(current_date)
             next_period_name = get_date_name(next_period)
-            log.info(f"📅 Current date: {current_date} ({current_date_name}), checking next period: {next_period} ({next_period_name})")
+            log.info(f"📅 Current game date: {current_date} ({current_date_name}), planning races for: {next_period} ({next_period_name})")
+            log.info(f"🔄 Updated game date to: {current_date} ({current_date_name})")
             
             # Check for races in the next period
             from module.umamusume.asset.race_data import get_races_for_period
@@ -312,8 +330,6 @@ def script_info(ctx: UmamusumeContext):
             ctx.cultivate_detail.turn_info.turn_operation.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_RACE
             ctx.cultivate_detail.turn_info.turn_operation.race_id = target_race_id
             log.info("🏁 Set race operation for G1 goal farming")
-            ctx.ctrl.click_by_point(WIN_TIMES_NOT_ENOUGH_RETURN)  # Close the goal screen first
-            time.sleep(1)
             ctx.ctrl.click_by_point(CULTIVATE_RACE)  # Navigate to race menu
             log.info("📋 Navigated to race selection to work towards G1 goals")
             
@@ -343,12 +359,30 @@ def script_info(ctx: UmamusumeContext):
         if title_text == TITLE[21]:  # insufficient fans (was TITLE[19])
             log.info("🏆 insufficient fans detected - navigating to races to fulfill fan goals")
             
-            # Get current date and calculate next period
-            current_date = ctx.cultivate_detail.turn_info.date
-            next_period = current_date + 1
+            # Close popup to return to main menu where date is visible
+            ctx.ctrl.click_by_point(CULTIVATE_FAN_NOT_ENOUGH_RETURN)
+            time.sleep(2)  # Wait longer for main menu to fully load
+            
+            # Refresh screen to get the actual main menu
+            ctx.current_screen = ctx.ctrl.get_screen()
+            
+            # Read actual current date from main menu
+            from module.umamusume.script.cultivate_task.parse import parse_date
+            current_date = parse_date(ctx.current_screen, ctx)
+            if current_date == -1:
+                log.warning("Failed to parse date from main menu")
+                return
+            
+            # Use current period for race planning (no +1 needed)
+            next_period = current_date
+            
+            # Update context with accurate date
+            ctx.cultivate_detail.turn_info.date = current_date
+            
             current_date_name = get_date_name(current_date)
             next_period_name = get_date_name(next_period)
-            log.info(f"📅 Current date: {current_date} ({current_date_name}), checking next period: {next_period} ({next_period_name})")
+            log.info(f"📅 Current game date: {current_date} ({current_date_name}), planning races for: {next_period} ({next_period_name})")
+            log.info(f"🔄 Updated game date to: {current_date} ({current_date_name})")
             
             # Check for races in the next period
             from module.umamusume.asset.race_data import get_races_for_period
@@ -379,8 +413,6 @@ def script_info(ctx: UmamusumeContext):
             ctx.cultivate_detail.turn_info.turn_operation.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_RACE
             ctx.cultivate_detail.turn_info.turn_operation.race_id = target_race_id
             log.info("🏁 Set race operation for fan farming")
-            ctx.ctrl.click_by_point(CULTIVATE_FAN_NOT_ENOUGH_RETURN)
-            time.sleep(1)
             ctx.ctrl.click_by_point(CULTIVATE_RACE)
             log.info("📋 Navigated to race selection to work towards fan goals")
             

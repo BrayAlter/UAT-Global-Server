@@ -19,6 +19,47 @@ from module.umamusume.script.cultivate_task.const import DATE_YEAR, DATE_MONTH
 log = logger.get_logger(__name__)
 
 
+def normalize_skill_name(skill_name: str) -> str:
+    """Normalize skill name by removing spaces and converting to lowercase for better matching"""
+    return skill_name.replace(" ", "").lower()
+
+
+def find_similar_skill_name(target_text: str, ref_text_list: list[str], threshold: float = 0.7) -> str:
+    """Enhanced skill name matching that handles spacing variations"""
+    result = ""
+    best_ratio = 0
+    
+    # Normalize target text
+    normalized_target = normalize_skill_name(target_text)
+    
+    for ref_text in ref_text_list:
+        # Try exact match first
+        if target_text == ref_text:
+            return ref_text
+        
+        # Try normalized match
+        normalized_ref = normalize_skill_name(ref_text)
+        if normalized_target == normalized_ref:
+            return ref_text
+        
+        # Try similarity matching
+        s = SequenceMatcher(None, target_text, ref_text)
+        ratio = s.ratio()
+        
+        # Also try normalized similarity
+        s_normalized = SequenceMatcher(None, normalized_target, normalized_ref)
+        ratio_normalized = s_normalized.ratio()
+        
+        # Use the better ratio
+        best_ratio_for_this = max(ratio, ratio_normalized)
+        
+        if best_ratio_for_this > threshold and best_ratio_for_this > best_ratio:
+            result = ref_text
+            best_ratio = best_ratio_for_this
+    
+    return result
+
+
 def parse_date(img, ctx: UmamusumeContext) -> int:
     # Youth Cup and URA UI positions are different
     if ctx.cultivate_detail.scenario.scenario_type() == ScenarioType.SCENARIO_TYPE_AOHARUHAI:
@@ -643,22 +684,58 @@ def find_skill(ctx: UmamusumeContext, img, skill: list[str], learn_any_skill: bo
                 if not image_match(skill_info_img, REF_SKILL_LEARNED).find_match:
                     skill_name_img = skill_info_img[10: 47, 100: 445]
                     text = ocr_line(skill_name_img)
-                    result = find_similar_text(text, skill, 0.7)
+                    result = find_similar_skill_name(text, skill, 0.7)
                     # print(text + "->" + result)
                     if result != "" or learn_any_skill:
                         tmp_img = ctx.ctrl.get_screen()
                         pt_text = re.sub("\\D", "", ocr_line(tmp_img[400: 440, 490: 665]))
                         skill_pt_cost_text = re.sub("\\D", "", ocr_line(skill_info_img[69: 99, 525: 588]))
+                        
+                        # Handle empty cost (Global Server UI compatibility) - same as get_skill_list()
+                        if not skill_pt_cost_text or skill_pt_cost_text == '':
+                            # Try alternative cost extraction regions for Global Server
+                            alt_cost_regions = [
+                                skill_info_img[65: 95, 520: 595],  # Slightly adjusted region
+                                skill_info_img[70: 100, 515: 590], # Different adjustment
+                                skill_info_img[60: 90, 530: 600],  # Wider region
+                            ]
+                            
+                            for i, alt_region in enumerate(alt_cost_regions):
+                                try:
+                                    alt_cost_text = ocr_line(alt_region)
+                                    alt_cost = re.sub("\\D", "", alt_cost_text)
+                                    if alt_cost and alt_cost != '':
+                                        skill_pt_cost_text = alt_cost
+                                        log.debug(f"find_skill - Found skill cost using alternative region {i+1}: '{alt_cost}' for '{text}'")
+                                        break
+                                except:
+                                    continue
+                            
+                            # Final fallback if all regions fail
+                            if not skill_pt_cost_text or skill_pt_cost_text == '':
+                                log.debug(f"find_skill - Could not parse skill cost for '{text}', defaulting to 1")
+                                skill_pt_cost_text = '1'  # Default cost to avoid crashes
+                        
+                        # Debug: Log point and cost extraction
+                        log.debug(f"🔍 find_skill - Available points: '{pt_text}', Skill cost: '{skill_pt_cost_text}'")
+                        
                         if pt_text != "" and skill_pt_cost_text != "":
                             pt = int(pt_text)
                             skill_pt_cost = int(skill_pt_cost_text)
+                            log.debug(f"🔍 find_skill - Points: {pt}, Cost: {skill_pt_cost}, Can buy: {pt >= skill_pt_cost}")
+                            
                             if pt >= skill_pt_cost:
+                                log.info(f"✅ Buying skill '{text}' - Points: {pt}, Cost: {skill_pt_cost}")
                                 ctx.ctrl.click(match_result.center_point[0] + 128, match_result.center_point[1],
-                                               "加点技能：" + text)
+                                               "Bonus Skills：" + text)
                                 if result in skill:
                                     skill.remove(result)
                                 ctx.cultivate_detail.learn_skill_selected = True
                                 find = True
+                            else:
+                                log.debug(f"❌ Not enough points for '{text}' - Need {skill_pt_cost}, have {pt}")
+                        else:
+                            log.debug(f"❌ Failed to extract points/cost - Points: '{pt_text}', Cost: '{skill_pt_cost_text}'")
 
             img[match_result.matched_area[0][1]:match_result.matched_area[1][1],
             match_result.matched_area[0][0]:match_result.matched_area[1][0]] = 0
@@ -688,6 +765,9 @@ def get_skill_list(img, skill: list[str], skill_blacklist: list[str]) -> list:
                 text = ocr_line(skill_name_img)
                 cost_text = ocr_line(skill_cost_img)
                 cost = re.sub("\\D", "", cost_text)
+                
+                # Debug: Log OCR text for skill names
+                log.debug(f"🔍 OCR skill name: '{text}'")
                 
                 # Handle empty cost (Global Server UI compatibility)
                 if not cost or cost == '':
@@ -722,8 +802,17 @@ def get_skill_list(img, skill: list[str], skill_blacklist: list[str]) -> list:
                 skill_name_raw = "" # Save original skill name to prevent OCR deviation
                 priority = 99
                 for i in range(len(skill)):
-                    found_similar_blacklist = find_similar_text(text, skill_blacklist, 0.7)
-                    found_similar_prioritylist = find_similar_text(text, skill[i], 0.7)
+                    found_similar_blacklist = find_similar_skill_name(text, skill_blacklist, 0.7)
+                    found_similar_prioritylist = find_similar_skill_name(text, skill[i], 0.7)
+                    
+                    # Debug: Log similarity matching results
+                    if found_similar_prioritylist != "":
+                        log.debug(f"✅ Skill match: '{text}' -> '{found_similar_prioritylist}' (priority {i})")
+                    elif found_similar_blacklist != "":
+                        log.debug(f"❌ Skill blacklisted: '{text}' -> '{found_similar_blacklist}'")
+                    else:
+                        log.debug(f"❌ No match for skill: '{text}' (priority {i})")
+                    
                     if found_similar_blacklist != "": # Exclude skills that appear in blacklist
                         priority = -1
                         skill_name_raw = found_similar_blacklist

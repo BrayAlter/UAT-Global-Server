@@ -8,11 +8,37 @@ from bot.recog.image_matcher import image_match
 
 log = logger.get_logger(__name__)
 
+# Simple cache for race data to avoid repeated lookups
+_race_cache = {}
+
+def _get_races_for_period_cached(period: int) -> list[int]:
+    """Cached version of get_races_for_period to avoid repeated CSV reads"""
+    if period not in _race_cache:
+        from module.umamusume.asset.race_data import get_races_for_period
+        _race_cache[period] = get_races_for_period(period)
+    return _race_cache[period]
+
 
 def get_operation(ctx: UmamusumeContext) -> TurnOperation | None:
     turn_operation = TurnOperation()
     if not ctx.cultivate_detail.debut_race_win:
         turn_operation.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_RACE
+
+    # Fast path: If we have a clear decision based on stamina/motivation, skip complex calculations
+    if ctx.cultivate_detail.turn_info.remain_stamina <= 48:
+        log.info(f"🏥 Fast path: Low stamina ({ctx.cultivate_detail.turn_info.remain_stamina}) - prioritizing rest")
+        turn_operation.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_REST
+        return turn_operation
+    
+    if ctx.cultivate_detail.turn_info.medic_room_available and ctx.cultivate_detail.turn_info.remain_stamina <= 65:
+        log.info(f"🏥 Fast path: Low stamina ({ctx.cultivate_detail.turn_info.remain_stamina}) - prioritizing medic")
+        turn_operation.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_MEDIC
+        return turn_operation
+
+    # Cache screen image to avoid multiple conversions
+    cached_screen = None
+    if ctx.current_screen is not None:
+        cached_screen = cv2.cvtColor(ctx.current_screen, cv2.COLOR_BGR2GRAY)
 
     attribute_result = get_training_basic_attribute_score(ctx, ctx.cultivate_detail.turn_info,
                                                           ctx.cultivate_detail.expect_attribute)
@@ -108,11 +134,9 @@ def get_operation(ctx: UmamusumeContext) -> TurnOperation | None:
         
         # Check for URA championship races first (automatic detection)
         ura_race_id = None
-        log.info(f"🔍 Checking scenario type: {ctx.task.detail.scenario}")
         if ctx.task.detail.scenario == ScenarioType.SCENARIO_TYPE_URA:
             # URA championship phases based on date
             date = ctx.cultivate_detail.turn_info.date
-            log.info(f"🔍 URA scenario detected, current date: {date}")
             if 73 <= date <= 75:  # URA Qualifier
                 ura_race_id = 2381
             elif 76 <= date <= 78:  # URA Semi-final
@@ -120,31 +144,22 @@ def get_operation(ctx: UmamusumeContext) -> TurnOperation | None:
             elif 79 <= date <= 99:  # URA Final
                 ura_race_id = 2385  # or 2386, 2387 for different final types
             
-            log.info(f"🔍 Calculated URA race ID: {ura_race_id}")
-            
-            # Check if URA race button is actually available on screen
-            if ura_race_id:
-                if ctx.current_screen is None:
-                    log.warning("🔍 No current screen available - skipping URA race button check")
-                    ura_race_id = None
-                else:
-                    img_gray = cv2.cvtColor(ctx.current_screen, cv2.COLOR_BGR2GRAY)
-                    ura_race_available = False
-                    
-                    if 73 <= date <= 75:  # Qualifier
-                        ura_race_available = image_match(img_gray, UI_CULTIVATE_URA_RACE_1).find_match
-                        log.info(f"🔍 URA Qualifier race button available: {ura_race_available}")
-                    elif 76 <= date <= 78:  # Semi-final
-                        ura_race_available = image_match(img_gray, UI_CULTIVATE_URA_RACE_2).find_match
-                        log.info(f"🔍 URA Semi-final race button available: {ura_race_available}")
-                    elif 79 <= date <= 99:  # Final
-                        ura_race_available = image_match(img_gray, UI_CULTIVATE_URA_RACE_3).find_match
-                        log.info(f"🔍 URA Final race button available: {ura_race_available}")
-                    
-                    # If race button is not available, don't race
-                    if not ura_race_available:
-                        log.info(f"🏆 URA race button not available yet - continuing with normal training/rest")
-                        ura_race_id = None  # Don't race if button not available
+            # Check if URA race button is actually available on screen (optimized)
+            if ura_race_id and cached_screen is not None:
+                ura_race_available = False
+                
+                if 73 <= date <= 75:  # Qualifier
+                    ura_race_available = image_match(cached_screen, UI_CULTIVATE_URA_RACE_1).find_match
+                elif 76 <= date <= 78:  # Semi-final
+                    ura_race_available = image_match(cached_screen, UI_CULTIVATE_URA_RACE_2).find_match
+                elif 79 <= date <= 99:  # Final
+                    ura_race_available = image_match(cached_screen, UI_CULTIVATE_URA_RACE_3).find_match
+                
+                # If race button is not available, don't race
+                if not ura_race_available:
+                    ura_race_id = None  # Don't race if button not available
+            elif ura_race_id and cached_screen is None:
+                ura_race_id = None
         
         if ura_race_id:
             log.info(f"🏆 Detected URA championship race: {ura_race_id} at date {date}")
@@ -187,7 +202,7 @@ def get_operation(ctx: UmamusumeContext) -> TurnOperation | None:
                 return turn_operation
         
         # Get races available for current time period
-        available_races = get_races_for_period(ctx.cultivate_detail.turn_info.date)
+        available_races = _get_races_for_period_cached(ctx.cultivate_detail.turn_info.date)
         # Find intersection with user-configured extra races
         extra_race_this_turn = [race_id for race_id in ctx.cultivate_detail.extra_race_list 
                                if race_id in available_races]

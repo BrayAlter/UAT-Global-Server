@@ -476,8 +476,6 @@ def script_cultivate_race_list(ctx: UmamusumeContext):
         log.info("🏆 Found URA Race - clicking to enter detail interface")
         ctx.ctrl.click_by_point(CULTIVATE_GOAL_RACE_INTER_1)
     else:
-        log.info("❌ No race templates detected - falling back to race ID search")
-        
         # Special handling for URA races - if we're in race list after URA race click, just click the race button
         if ctx.cultivate_detail.turn_info.turn_operation is None:
             log.warning("No turn operation - returning to main menu")

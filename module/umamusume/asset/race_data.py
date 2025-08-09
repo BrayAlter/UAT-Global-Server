@@ -5,7 +5,7 @@ from bot.base.resource import Template
 from module.umamusume.asset import REF_SUITABLE_RACE
 
 RACE_LIST: list[list] = []
-UMAMUSUME_RACE_TEMPLATE_PATH = "/umamusume/race2"
+UMAMUSUME_RACE_TEMPLATE_PATH = "/umamusume/race"
 
 
 def load_race_data():

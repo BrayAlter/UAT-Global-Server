@@ -2,13 +2,19 @@
   <div id="aoharu-config-modal" class="modal fade" data-backdrop="static" data-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content" @click.stop>
-        <h5 class="modal-header">青春杯配置</h5>
+        <div class="modal-header d-flex align-items-center justify-content-between">
+          <h5 class="mb-0">Aoharu Cup Configuration</h5>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary me-2" @click="$emit('update:show', false)">Cancel</button>
+            <button class="btn btn-sm btn--primary" @click="confirm">Confirm</button>
+          </div>
+        </div>
         <div class="modal-body">
           <div class="row">
-            <div class="col-5" style="border-right: 1px solid #e0e0e0;">
-              <h5>选择预赛选手</h5>
+            <div class="col-5 section-card p-3" style="border-right: 1px solid #e0e0e0;">
+              <h6 class="mb-3">Select Preliminary Round Participants</h6>
               <div class="form-group">
-                <label>预赛第一轮&nbsp;&nbsp;</label>
+                <label>Preliminary Round 1&nbsp;&nbsp;</label>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input" type="radio" id="pr1_1" :value="1" v-model.number="internalPreliminaryRoundSelections[0]">
                   <label class="form-check-label" for="pr1_1">1</label>
@@ -23,7 +29,7 @@
                 </div>
               </div>
               <div class="form-group">
-                <label>预赛第二轮&nbsp;&nbsp;</label>
+                <label>Preliminary Round 2&nbsp;&nbsp;</label>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input" type="radio" id="pr2_1" :value="1" v-model.number="internalPreliminaryRoundSelections[1]">
                   <label class="form-check-label" for="pr2_1">1</label>
@@ -38,7 +44,7 @@
                 </div>
               </div>
               <div class="form-group">
-                <label>预赛第三轮&nbsp;&nbsp;</label>
+                <label>Preliminary Round 3&nbsp;&nbsp;</label>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input" type="radio" id="pr3_1" :value="1" v-model.number="internalPreliminaryRoundSelections[2]">
                   <label class="form-check-label" for="pr3_1">1</label>
@@ -53,7 +59,7 @@
                 </div>
               </div>
               <div class="form-group">
-                <label>预赛第四轮&nbsp;&nbsp;</label>
+                <label>Preliminary Round 4&nbsp;&nbsp;</label>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input" type="radio" id="pr4_1" :value="1" v-model.number="internalPreliminaryRoundSelections[3]">
                   <label class="form-check-label" for="pr4_1">1</label>
@@ -68,36 +74,34 @@
                 </div>
               </div>
             </div>
-            <div class="col-7">
-              <h5>选择青春杯队名</h5>
+            <div class="col-7 section-card p-3">
+              <h6 class="mb-3">Select Aoharu Team Name</h6>
               <div class="form-group">
                 <div class="form-check mb-3 ps-0">
                   <input class="form-check-input" type="radio" id="team_taiki" :value="0" v-model.number="internalAoharuTeamNameSelection">
-                  <label class="form-check-label" for="team_taiki">大树快车 &lt;HOP CHEERS&gt; <SkillIcon name="英里统治者" type="speed"></SkillIcon></label>
+                  <label class="form-check-label" for="team_taiki">Taiki Shuttle &lt;HOP CHEERS&gt; <SkillIcon name="Mile Dominator" type="speed"></SkillIcon></label>
                 </div>
                 <div class="form-check mb-3 ps-0">
                   <input class="form-check-input" type="radio" id="team_fukukitaru" :value="1" v-model.number="internalAoharuTeamNameSelection">
-                  <label class="form-check-label" for="team_fukukitaru">待兼福来 &lt;晴天跑者&gt; <SkillIcon name="千里眼" type="sight"></SkillIcon></label>
+                  <label class="form-check-label" for="team_fukukitaru">Matikanefukukitaru &lt;Sunny Runner&gt; <SkillIcon name="Eagle Eye" type="sight"></SkillIcon></label>
                 </div>
                 <div class="form-check mb-3 ps-0">
                   <input class="form-check-input" type="radio" id="team_urara" :value="2" v-model.number="internalAoharuTeamNameSelection">
-                  <label class="form-check-label" for="team_urara">春乌拉拉 &lt;胡萝卜布丁&gt; <SkillIcon name="不屈之心" type="stamina"></SkillIcon></label>
+                  <label class="form-check-label" for="team_urara">Haru Urara &lt;Carrot Pudding&gt; <SkillIcon name="Unyielding Heart" type="stamina"></SkillIcon></label>
                 </div>
                 <div class="form-check mb-3 ps-0">
                   <input class="form-check-input" type="radio" id="team_raisu" :value="3" v-model.number="internalAoharuTeamNameSelection">
-                  <label class="form-check-label" for="team_raisu">米浴 &lt;花开&gt; <SkillIcon name="冷却" type="stamina"></SkillIcon></label>
+                  <label class="form-check-label" for="team_raisu">Rice Shower &lt;Bloom&gt; <SkillIcon name="Cooldown" type="stamina"></SkillIcon></label>
                 </div>
                 <div class="form-check mb-3 ps-0">
                   <input class="form-check-input" type="radio" id="team_default" :value="4" v-model.number="internalAoharuTeamNameSelection">
-                  <label class="form-check-label" for="team_default">默认 &lt;胡萝卜&gt; <SkillIcon name="不停步的女孩" type="accelerate"></SkillIcon></label>
+                  <label class="form-check-label" for="team_default">Default &lt;Carrot&gt; <SkillIcon name="Non‑stop Girl" type="accelerate"></SkillIcon></label>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <span class="btn auto-btn confirm-btn-large" v-on:click="confirm">确定</span>
-        </div>
+        <div class="modal-footer d-none"></div>
       </div>
     </div>
   </div>
@@ -218,6 +222,12 @@ export default {
 }
 
 /* 修复单选框和文字对齐问题 */
+#aoharu-config-modal .section-card{
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  box-shadow:0 2px 4px rgba(0,0,0,.06);
+}
+
 .form-check {
   display: flex;
   align-items: center;

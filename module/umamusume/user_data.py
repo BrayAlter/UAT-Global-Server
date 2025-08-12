@@ -23,6 +23,15 @@ def write_preset(preset_json: str):
     write_file(presets_path+"/"+name+".json", preset_json)
 
 
+def delete_preset_by_name(name: str):
+    folder = base_path + presets_path
+    filepath = os.path.join(folder, f"{name}.json")
+    if os.path.exists(filepath):
+        os.remove(filepath)
+        return True
+    return False
+
+
 
 
 

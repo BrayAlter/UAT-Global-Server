@@ -1716,6 +1716,83 @@
     }
   },
   {
+    "character_name": "Smart Falcon",
+    "objectives": {
+      "junior_year": {
+        "dates": [
+          "Junior Early Jul",
+          "Junior Late Jul",
+          "Junior Early Aug",
+          "Junior Late Aug",
+          "Junior Early Sep",
+          "Junior Late Sep",
+          "Junior Early Oct",
+          "Junior Late Oct",
+          "Junior Early Nov",
+          "Junior Late Nov",
+          "Junior Early Dec",
+          "Junior Late Dec"
+        ],
+        "count": 12
+      },
+      "classic_year": {
+        "dates": [
+          "Classic Pre-Debut",
+          "Classic Late Jan",
+          "Classic Early Feb",
+          "Classic Late Feb",
+          "Classic Early Mar",
+          "Classic Late Mar",
+          "Classic Late Apr",
+          "Classic Early May",
+          "Classic Late May",
+          "Classic Early Jun",
+          "Classic Late Jun",
+          "Classic Late Jul",
+          "Classic Early Aug",
+          "Classic Late Aug",
+          "Classic Early Sep",
+          "Classic Late Sep",
+          "Classic Early Oct",
+          "Classic Late Oct",
+          "Classic Late Nov",
+          "Classic Early Dec"
+        ],
+        "count": 20
+      },
+      "senior_year": {
+        "dates": [
+          "Senior Pre-Debut",
+          "Senior Early Jan",
+          "Senior Late Jan",
+          "Senior Early Feb",
+          "Senior Early Mar",
+          "Senior Late Mar",
+          "Senior Early Apr",
+          "Senior Late Apr",
+          "Senior Early May",
+          "Senior Late May",
+          "Senior Early Jun",
+          "Senior Early Jul",
+          "Senior Late Jul",
+          "Senior Early Aug",
+          "Senior Late Aug",
+          "Senior Early Sep",
+          "Senior Late Sep",
+          "Senior Early Oct",
+          "Senior Late Oct",
+          "Senior Late Nov"
+        ],
+        "count": 20
+      }
+    },
+    "total_objectives": 52,
+    "aptitude": {
+      "terrain": "Dirt",
+      "distance": "Mile, Medium"
+    }
+  },
+  {
     "character_name": "Special Week",
     "objectives": {
       "junior_year": {

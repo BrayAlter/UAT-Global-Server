@@ -298,7 +298,7 @@ def parse_umamusume_remain_stamina_value(ctx: UmamusumeContext, img):
     sub_img_remain_stamina = img[160:161, 229:505]
     stamina_counter = 0
     for c in sub_img_remain_stamina[0]:
-        if not compare_color_equal(c, [117, 117, 117]):
+        if not compare_color_equal(c, [117, 117, 117], tolerance=20):
             stamina_counter += 1
     remain_stamina = int(stamina_counter / 276 * 100)
     ctx.cultivate_detail.turn_info.remain_stamina = remain_stamina
@@ -559,15 +559,14 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                         race_name_img.shape[0] >= template_img.shape[0] and 
                         race_name_img.shape[1] >= template_img.shape[1]):
                         
-                        # Try original template matching first
+                        # STEP 1: Try template matching first
                         template_match = image_match(race_name_img, target_race_template)
-                        if template_match.find_match:
-                            log.info(f"✅ Found race {race_id} at position {match_result.center_point}")
-                            ctx.ctrl.click(match_result.center_point[0], match_result.center_point[1],
-                                           "Select race: " + str(RACE_LIST[race_id][1]))
-                            return True
+                        template_success = template_match.find_match
+                        
+                        if template_success:
+                            log.info(f"✅ Template match successful for race {race_id}")
                         else:
-                            log.debug(f"❌ Original template match failed for race {race_id}")
+                            log.debug(f"❌ Template match failed for race {race_id}")
                             
                             # Try with preprocessed template (wiki image optimization)
                             try:
@@ -580,88 +579,69 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                                 # Try without threshold parameter first
                                 preprocessed_match = image_match(race_name_img, temp_template)
                                 if preprocessed_match.find_match:
-                                    log.info(f"✅ Found race {race_id} with preprocessed template at position {match_result.center_point}")
-                                    ctx.ctrl.click(match_result.center_point[0], match_result.center_point[1],
-                                                   "Select race (preprocessed): " + str(RACE_LIST[race_id][1]))
-                                    return True
+                                    template_success = True
+                                    log.info(f"✅ Preprocessed template match successful for race {race_id}")
                                 else:
                                     log.debug(f"❌ Preprocessed template match also failed for race {race_id}")
                             except Exception as e:
                                 log.debug(f"Preprocessed template matching failed: {e}")
+                        
+                        # STEP 2: Try OCR to get the actual race name from screen
+                        ocr_race_id = None
+                        try:
+                            race_name_text = ocr_line(race_name_img)
+                            log.info(f"🔍 OCR extracted text: '{race_name_text}'")
                             
-                            # Try OCR fallback for race name matching
-                            try:
-                                race_name_text = ocr_line(race_name_img)
-                                target_race_name = RACE_LIST[race_id][1]
+                            # Try to find which race ID this OCR text corresponds to
+                            # Search through all races to find a match
+                            for search_race_id in range(len(RACE_LIST)):
+                                if search_race_id == race_id:  # Skip our target race
+                                    continue
+                                    
+                                target_race_name = RACE_LIST[search_race_id][1]
+                                in_game_race_name = convert_race_name_to_ingame_format(search_race_id)
                                 
-                                # Convert CSV race name to in-game format for matching
-                                in_game_race_name = convert_race_name_to_ingame_format(race_id)
-                                
-                                log.info(f"🔍 OCR fallback - Extracted: '{race_name_text}'")
-                                log.info(f"🔍 Target CSV: '{target_race_name}'")
-                                log.info(f"🔍 Target In-Game: '{in_game_race_name}'")
-                                
-                                # Try matching against both CSV name and in-game format
+                                # Check if OCR text matches this race
                                 csv_match = target_race_name.lower() in race_name_text.lower() or race_name_text.lower() in target_race_name.lower()
                                 ingame_match = in_game_race_name.lower() in race_name_text.lower() or race_name_text.lower() in in_game_race_name.lower()
                                 
-                                # Also try matching key parts of the detected text
-                                detected_parts = race_name_text.lower().replace(" ", "")
-                                target_parts = target_race_name.lower().replace(" ", "")
-                                ingame_parts = in_game_race_name.lower().replace(" ", "")
-                                
-                                # Check if key parts match based on the specific race
-                                key_parts_match = False
-                                
-                                # Get race details from CSV for dynamic matching
-                                try:
-                                    import csv
-                                    with open('resource/umamusume/data/race.csv', 'r', encoding="utf-8") as file:
-                                        reader = csv.reader(file)
-                                        for row in reader:
-                                            if len(row) >= 9 and int(row[1]) == race_id:
-                                                venue = row[5] if len(row) > 5 and row[5] else ""  # Hanshin
-                                                surface = row[6] if len(row) > 6 and row[6] else ""  # Turf
-                                                distance = row[7] if len(row) > 7 and row[7] else ""  # 2200
-                                                direction = row[8] if len(row) > 8 and row[8] else ""  # Right
-                                                
-                                                # Create key parts to look for
-                                                key_parts = []
-                                                if venue:
-                                                    key_parts.append(venue.lower())
-                                                if surface:
-                                                    key_parts.append(surface.lower())
-                                                if distance:
-                                                    # Add "m" after distance numbers (4 digits only)
-                                                    if distance.isdigit() and len(distance) == 4:
-                                                        key_parts.append(f"{distance}m")
-                                                    else:
-                                                        key_parts.append(distance.lower())
-                                                if direction:
-                                                    key_parts.append(direction.lower())
-                                                
-                                                # Check if all key parts are found in detected text
-                                                if len(key_parts) >= 2:  # Need at least 2 parts to match
-                                                    found_parts = sum(1 for part in key_parts if part in detected_parts)
-                                                    if found_parts >= len(key_parts) * 0.7:  # 70% match threshold
-                                                        key_parts_match = True
-                                                        log.info(f"🔍 Key parts match: {found_parts}/{len(key_parts)} parts found")
-                                                break
-                                except Exception as e:
-                                    log.debug(f"Key parts matching failed: {e}")
-                                
-                                if csv_match or ingame_match or key_parts_match:
-                                    log.info(f"✅ OCR match found for race {race_id}")
-                                    ctx.ctrl.click(match_result.center_point[0], match_result.center_point[1],
-                                                   "Select race (OCR): " + str(RACE_LIST[race_id][1]))
-                                    return True
-                                else:
-                                    log.debug(f"❌ No OCR match - CSV: {csv_match}, In-Game: {ingame_match}, Key Parts: {key_parts_match}")
-                                    log.debug(f"🔍 Detected parts: '{detected_parts}'")
-                                    log.debug(f"🔍 Target parts: '{target_parts}'")
-                                    log.debug(f"🔍 In-game parts: '{ingame_parts}'")
-                            except Exception as e:
-                                log.debug(f"OCR fallback failed: {e}")
+                                if csv_match or ingame_match:
+                                    ocr_race_id = search_race_id
+                                    log.info(f"🔍 OCR identified race ID: {ocr_race_id} ({RACE_LIST[ocr_race_id][1]})")
+                                    break
+                                    
+                        except Exception as e:
+                            log.debug(f"OCR failed: {e}")
+                        
+                        # STEP 3: DUAL VERIFICATION - Both template and OCR must agree
+                        if template_success and ocr_race_id is not None:
+                            if ocr_race_id == race_id:
+                                # Both methods agree on the same race ID - this is the correct race!
+                                log.info(f"✅ DUAL VERIFICATION SUCCESS: Template and OCR both identify race ID {race_id}")
+                                ctx.ctrl.click(match_result.center_point[0], match_result.center_point[1],
+                                               "Select race (verified): " + str(RACE_LIST[race_id][1]))
+                                return True
+                            else:
+                                # Template and OCR disagree - this is NOT the correct race
+                                log.warning(f"⚠️ DUAL VERIFICATION FAILED: Template suggests race {race_id}, but OCR suggests race {ocr_race_id}")
+                                log.info(f"🔄 Continuing to search for the correct race...")
+                                # Mark this area as searched and continue
+                                img[match_result.matched_area[0][1]:match_result.matched_area[1][1],
+                                    match_result.matched_area[0][0]:match_result.matched_area[1][0]] = 0
+                                continue
+                        elif template_success and ocr_race_id is None:
+                            # Template succeeded but OCR failed - use template only as fallback
+                            log.warning(f"⚠️ OCR failed, but template succeeded. Using template-only verification for race {race_id}")
+                            ctx.ctrl.click(match_result.center_point[0], match_result.center_point[1],
+                                           "Select race (template-only): " + str(RACE_LIST[race_id][1]))
+                            return True
+                        else:
+                            # Both methods failed - continue searching
+                            log.debug(f"❌ Both template and OCR failed for race {race_id}, continuing search...")
+                            # Mark this area as searched and continue
+                            img[match_result.matched_area[0][1]:match_result.matched_area[1][1],
+                                match_result.matched_area[0][0]:match_result.matched_area[1][0]] = 0
+                            continue
                     else:
                         log.debug(f"Template too large for extracted region: template {None if template_img is None else template_img.shape}, region {race_name_img.shape}")
             img[match_result.matched_area[0][1]:match_result.matched_area[1][1],

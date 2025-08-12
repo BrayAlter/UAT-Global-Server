@@ -15,6 +15,7 @@
 <script>
 import ManualSkillNotificationModal from '@/components/ManualSkillNotificationModal.vue'
 import axios from '@/util/axiosConf.js'
+import '@/assets/theme.css'
 
 export default {
   name: 'App',
@@ -105,9 +106,7 @@ html,body{
   color: #2c3e50;
 }
 
-#nav a.router-link-exact-active {
-  color: #0faedf;
-}
+#nav a.router-link-exact-active { color: var(--color-primary); }
 
 body{
   background-color: #f0f1f5;
@@ -123,13 +122,7 @@ body{
   padding: 10px;
 }
 
-.auto-btn{
-  background-color: #0faedf;
-  color: white;
-  cursor: pointer;
-  opacity: 0.8;
-  transition:opacity .3s;
-}
+.auto-btn{ background-color: var(--color-primary); color:#fff; cursor:pointer; opacity:.9; transition:opacity .2s; }
 
 
 .btn{
@@ -139,11 +132,7 @@ body{
 
 
 
-.auto-btn:hover{
-  color: white;
-  cursor: pointer;
-  opacity: 1.0;
-}
+.auto-btn:hover{ color:#fff; cursor:pointer; opacity:1 }
 
 .auto-btn-red{
   background-color: #dc3545;

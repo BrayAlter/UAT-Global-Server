@@ -2,11 +2,25 @@
   <div id="create-task-list-modal" class="modal fade" data-backdrop="static" data-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content" :class="{ 'dimmed': showAoharuConfigModal || showSupportCardSelectModal }">
-        <h5 class="modal-header">
-          Create New Task
-        </h5>
-        <div class="modal-body">
-          <form>
+        <div class="modal-header d-flex align-items-center justify-content-between">
+          <h5 class="mb-0">Create New Task</h5>
+          <div class="header-actions">
+            <button type="button" class="btn btn-sm btn-outline-secondary" @click="cancelTask">Cancel</button>
+            <button type="button" class="btn btn-sm btn-primary" @click="addTask">Confirm</button>
+          </div>
+        </div>
+        <div class="modal-body modal-body--split" ref="scrollPane">
+          <div class="side-nav">
+            <div class="side-nav-title">Sections</div>
+            <ul class="side-nav-list">
+              <li v-for="s in sectionList" :key="s.id">
+                <a href="#" :class="{ active: activeSection === s.id }" @click.prevent="scrollToSection(s.id)">{{ s.label }}</a>
+              </li>
+            </ul>
+          </div>
+          <form class="content-pane">
+            <div class="category-card" id="category-general">
+              <div class="category-title">General</div>
             <div class="form-group">
               <label for="selectTaskType">⭐ Task Selection</label>
               <select v-model="selectedUmamusumeTaskType" class="form-control" id="selectTaskType">
@@ -39,7 +53,7 @@
               </div>
               <div class="col">
                 <div class="form-group">
-                  <label for="selectAutoRecoverTP">Auto-recover when TP is low (Carrots only)</label>
+                  <label for="selectAutoRecoverTP">Auto-recover when TP is low (TP Bottle)</label>
                   <select v-model="recoverTP" class="form-control" id="selectAutoRecoverTP">
                     <option :value=true>Yes</option>
                     <option :value=false>No</option>
@@ -65,6 +79,7 @@
                 </div>
               </div>
             </div>
+            </div>
             <!-- Limited Time Module: Fujikiseki Show Mode -->
             <!-- <div class="row">
               <div class="col-3">
@@ -85,92 +100,143 @@
                 </div>
               </div>
             </div> -->
+            <div class="category-card" id="category-preset">
+              <div class="category-title">Preset &amp; Support Card</div>
             <div class="row">
               <div class="col-8">
                 <div class="form-group">
                   <label for="race-select">⭐ Use Preset</label>
-                  <div class="form-inline">
-                    <select v-model="presetsUse" style="text-overflow: ellipsis;width: 40em;" class="form-control"
-                      id="use_presets">
+                  <div class="input-group input-group-sm">
+                    <select v-model="presetsUse" class="form-control" id="use_presets">
                       <option v-for="set in cultivatePresets" :value="set">{{ set.name }}</option>
                     </select>
-                    <span class="btn auto-btn ml-2" v-on:click="applyPresetRace">Apply</span>
+                    <div class="input-group-append">
+                      <button type="button" class="btn btn-sm auto-btn" @click="applyPresetRace">Apply</button>
+                    </div>
                   </div>
                 </div>
               </div>
               <div class="col-4">
-                <div class="form-group">
-                  <label for="presetNameEditInput">Save as Preset</label>
-                  <div class="form-inline">
-                    <input v-model="presetNameEdit" type="text" class="form-control" id="presetNameEditInput"
-                      placeholder="Preset Name">
-                    <span class="btn auto-btn ml-2" v-on:click="addPresets">Save</span>
+                <div class="form-group preset-actions">
+                  <label>Save Preset</label>
+                  <div class="dropdown preset-save-group">
+                    <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle align-self-stretch" @click="togglePresetMenu">Save Preset</button>
+                    <div class="dropdown-menu show" v-if="showPresetMenu">
+                      <a href="#" class="dropdown-item" @click.prevent="selectPresetAction('add')">Add new preset</a>
+                      <a href="#" class="dropdown-item" @click.prevent="selectPresetAction('overwrite')">Overwrite preset</a>
+                      <a href="#" class="dropdown-item text-danger" @click.prevent="selectPresetAction('delete')">Delete saved preset</a>
+                    </div>
+                  </div>
+                  <div v-if="presetAction==='add'" class="mt-1">
+                    <div class="input-group input-group-sm">
+                      <input v-model="presetNameEdit" type="text" class="form-control" placeholder="Preset Name">
+                      <div class="input-group-append">
+                        <button class="btn btn-sm auto-btn" type="button" @click="confirmAddPreset">Save</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="presetAction==='overwrite'" class="mt-1">
+                    <div class="input-group input-group-sm">
+                      <select v-model="overwritePresetName" class="form-control">
+                        <option v-for="set in cultivatePresets.filter(p=>p.name!=='Default')" :key="set.name" :value="set.name">{{ set.name }}</option>
+                      </select>
+                      <div class="input-group-append">
+                        <button class="btn btn-sm auto-btn" type="button" @click="confirmOverwritePreset">Overwrite</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="presetAction==='delete'" class="mt-1">
+                    <div class="input-group input-group-sm">
+                      <select v-model="deletePresetName" class="form-control">
+                        <option v-for="set in cultivatePresets.filter(p=>p.name!=='Default')" :key="set.name" :value="set.name">{{ set.name }}</option>
+                      </select>
+                      <div class="input-group-append">
+                        <button class="btn btn-danger btn-sm" type="button" @click="confirmDeletePreset">Delete</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="row">
-              <div class="col-5">
+              <div class="col-6">
                 <div class="form-group">
                   <label>⭐ Friend Support Card Selection</label>
-                  <div style="display: flex; align-items: center;">
-                    <input type="text" class="form-control" :value="renderSupportCardText(selectedSupportCard)" readonly
-                      id="selectedSupportCard">
-                    <span class="btn auto-btn ml-2" style="white-space:nowrap;"
-                      v-on:click="openSupportCardSelectModal">Change</span>
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" :value="renderSupportCardText(selectedSupportCard)" readonly id="selectedSupportCard">
+                    <div class="input-group-append">
+                      <button type="button" class="btn btn-sm auto-btn" @click="openSupportCardSelectModal">Change</button>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="col-2">
+              <div class="col-3">
                 <div class="form-group">
                   <label for="selectSupportCardLevel">Support Card Level (≥)</label>
                   <input v-model="supportCardLevel" type="number" class="form-control" id="selectSupportCardLevel"
                     placeholder="">
                 </div>
               </div>
-              <div class="col-3">
-                <div class="form-group">
-                  <label for="inputClockUseLimit">Clock Usage Limit</label>
-                  <input v-model="clockUseLimit" type="number" class="form-control" id="inputClockUseLimit"
-                    placeholder="">
+            </div>
+            </div>
+            <div class="category-card" id="category-career">
+              <div class="category-title">Career Settings</div>
+              <div class="row">
+                <div class="col-3">
+                  <div class="form-group">
+                    <label for="inputClockUseLimit">Clock Usage Limit</label>
+                    <input v-model="clockUseLimit" type="number" class="form-control" id="inputClockUseLimit" placeholder="">
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="form-group">
-              <div>⭐ Target Attributes (If unsure about specific values, manually train once and input the final stats)
+              <div class="form-group">
+                <div>⭐ Target Attributes (If unsure about specific values, manually train once and input the final stats)</div>
               </div>
-            </div>
             <div class="row">
               <div class="col">
                 <div class="form-group">
                   <label for="speed-value-input">Speed</label>
-                  <input type="number" v-model="expectSpeedValue" class="form-control" id="speed-value-input">
+                  <div class="input-group input-group-sm">
+                    <input type="number" v-model="expectSpeedValue" class="form-control" id="speed-value-input">
+                    <div class="input-group-append"><span class="input-group-text">pt</span></div>
+                  </div>
                 </div>
               </div>
               <div class="col">
                 <div class="form-group">
                   <label for="stamina-value-input">Stamina</label>
-                  <input type="number" v-model="expectStaminaValue" class="form-control" id="stamina-value-input">
+                  <div class="input-group input-group-sm">
+                    <input type="number" v-model="expectStaminaValue" class="form-control" id="stamina-value-input">
+                    <div class="input-group-append"><span class="input-group-text">pt</span></div>
+                  </div>
                 </div>
               </div>
               <div class="col">
                 <div class="form-group">
                   <label for="power-value-input">Power</label>
-                  <input type="number" v-model="expectPowerValue" class="form-control" id="power-value-input">
+                  <div class="input-group input-group-sm">
+                    <input type="number" v-model="expectPowerValue" class="form-control" id="power-value-input">
+                    <div class="input-group-append"><span class="input-group-text">pt</span></div>
+                  </div>
                 </div>
               </div>
               <div class="col">
                 <div class="form-group">
                   <label for="will-value-input">Guts</label>
-                  <input type="number" v-model="expectWillValue" class="form-control" id="will-value-input">
+                  <div class="input-group input-group-sm">
+                    <input type="number" v-model="expectWillValue" class="form-control" id="will-value-input">
+                    <div class="input-group-append"><span class="input-group-text">pt</span></div>
+                  </div>
                 </div>
               </div>
               <div class="col">
                 <div class="form-group">
                   <label for="intelligence-value-input">Wit</label>
-                  <input type="number" v-model="expectIntelligenceValue" class="form-control"
-                    id="intelligence-value-input">
+                  <div class="input-group input-group-sm">
+                    <input type="number" v-model="expectIntelligenceValue" class="form-control" id="intelligence-value-input">
+                    <div class="input-group-append"><span class="input-group-text">pt</span></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -181,37 +247,43 @@
               <div class="col">
                 <div class="form-group">
                   <label for="motivation-year1">Year 1</label>
-                  <select v-model="motivationThresholdYear1" class="form-control" id="motivation-year1">
-                    <option :value=1>Awful</option>
-                    <option :value=2>Bad</option>
-                    <option :value=3>Normal</option>
-                    <option :value=4>Good</option>
-                    <option :value=5>Great</option>
-                  </select>
+                  <div class="input-group input-group-sm">
+                    <select v-model="motivationThresholdYear1" class="form-control" id="motivation-year1">
+                      <option :value=1>Awful</option>
+                      <option :value=2>Bad</option>
+                      <option :value=3>Normal</option>
+                      <option :value=4>Good</option>
+                      <option :value=5>Great</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div class="col">
                 <div class="form-group">
                   <label for="motivation-year2">Year 2</label>
-                  <select v-model="motivationThresholdYear2" class="form-control" id="motivation-year2">
-                    <option :value=1>Awful</option>
-                    <option :value=2>Bad</option>
-                    <option :value=3>Normal</option>
-                    <option :value=4>Good</option>
-                    <option :value=5>Great</option>
-                  </select>
+                  <div class="input-group input-group-sm">
+                    <select v-model="motivationThresholdYear2" class="form-control" id="motivation-year2">
+                      <option :value=1>Awful</option>
+                      <option :value=2>Bad</option>
+                      <option :value=3>Normal</option>
+                      <option :value=4>Good</option>
+                      <option :value=5>Great</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div class="col">
                 <div class="form-group">
                   <label for="motivation-year3">Year 3</label>
-                  <select v-model="motivationThresholdYear3" class="form-control" id="motivation-year3">
-                    <option :value=1>Awful</option>
-                    <option :value=2>Bad</option>
-                    <option :value=3>Normal</option>
-                    <option :value=4>Good</option>
-                    <option :value=5>Great</option>
-                  </select>
+                  <div class="input-group input-group-sm">
+                    <select v-model="motivationThresholdYear3" class="form-control" id="motivation-year3">
+                      <option :value=1>Awful</option>
+                      <option :value=2>Bad</option>
+                      <option :value=3>Normal</option>
+                      <option :value=4>Good</option>
+                      <option :value=5>Great</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -250,7 +322,7 @@
                 certain training types. Weight range [-1.0 ~ 1.0], 0 means no extra weight applied.</p>
               <p>❗ Setting weight to -1 will skip that training</p>
               <p>❗ Within the same year, all weights cannot be -1</p>
-              <p>When support cards or breeding stallion are weak, recommend increasing one attribute weight while
+              <p>When support cards or uma legacy are weak, recommend increasing one attribute weight while
                 decreasing others by the same amount</p>
               <div style="margin-bottom: 10px;">Year 1</div>
               <div class="row">
@@ -281,6 +353,9 @@
               </div>
             </div>
 
+            </div>
+            <div class="category-card" id="category-race">
+              <div class="category-title">Race Settings</div>
             <div class="form-group">
               <div>⭐ Racing Style Selection</div>
             </div>
@@ -288,34 +363,40 @@
               <div class="col">
                 <div class="form-group">
                   <label for="selectTactic1">Year 1</label>
-                  <select v-model="selectedRaceTactic1" class="form-control" id="selectTactic1">
-                    <option :value=1>End-Closer</option>
-                    <option :value=2>Late-Surger</option>
-                    <option :value=3>Pace-Chaser</option>
-                    <option :value=4>Front-Runner</option>
-                  </select>
+                  <div class="input-group input-group-sm">
+                    <select v-model="selectedRaceTactic1" class="form-control" id="selectTactic1">
+                      <option :value=1>End-Closer</option>
+                      <option :value=2>Late-Surger</option>
+                      <option :value=3>Pace-Chaser</option>
+                      <option :value=4>Front-Runner</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div class="col">
                 <div class="form-group">
                   <label for="selectTactic2">Year 2</label>
-                  <select v-model="selectedRaceTactic2" class="form-control" id="selectTactic2">
-                    <option :value=1>End-Closer</option>
-                    <option :value=2>Late-Surger</option>
-                    <option :value=3>Pace-Chaser</option>
-                    <option :value=4>Front-Runner</option>
-                  </select>
+                  <div class="input-group input-group-sm">
+                    <select v-model="selectedRaceTactic2" class="form-control" id="selectTactic2">
+                      <option :value=1>End-Closer</option>
+                      <option :value=2>Late-Surger</option>
+                      <option :value=3>Pace-Chaser</option>
+                      <option :value=4>Front-Runner</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div class="col">
                 <div class="form-group">
                   <label for="selectTactic3">Year 3</label>
-                  <select v-model="selectedRaceTactic3" class="form-control" id="selectTactic3">
-                    <option :value=1>End-Closer</option>
-                    <option :value=2>Late-Surger</option>
-                    <option :value=3>Pace-Chaser</option>
-                    <option :value=4>Front-Runner</option>
-                  </select>
+                  <div class="input-group input-group-sm">
+                    <select v-model="selectedRaceTactic3" class="form-control" id="selectTactic3">
+                      <option :value=1>End-Closer</option>
+                      <option :value=2>Late-Surger</option>
+                      <option :value=3>Pace-Chaser</option>
+                      <option :value=4>Front-Runner</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -341,38 +422,37 @@
                 </div>
               </div>
               <div v-if="showRaceList" class="race-options-content">
-                <!-- Race Filter Controls -->
-                <div class="row mb-3">
-                  <div class="col-md-4">
+                <!-- Race Filter Controls (tidy grid) -->
+                <div class="race-filters mb-3">
+                  <div class="filter">
                     <label>🔍 Search Races:</label>
                     <input type="text" v-model="raceSearch" class="form-control" placeholder="Search by race name...">
                   </div>
-                  <div class="col-md-4">
-                    <label>👤 Character Filter:</label>
+                  <div class="filter">
+                    <label>👤 Character Filter: <i class="fas fa-info-circle text-muted" title="Filter races based on character's terrain/distance aptitude and training schedule"></i></label>
                     <select v-model="selectedCharacter" class="form-control" @change="onCharacterChange">
                       <option value="">All Characters</option>
                       <option v-for="character in characterList" :key="character.name" :value="character.name">
                         {{ character.name }}</option>
                     </select>
+                    <small v-if="selectedCharacter" class="text-info">
+                      {{ getCompatibleRacesCount() }} compatible, {{ getIncompatibleRacesCount() }} filtered out
+                    </small>
+                    <small v-else class="text-muted">
+                      Select a character to filter races by compatibility
+                    </small>
                   </div>
-                  <div class="col-md-4">
+                  <div class="quick">
                     <label>🏁 Quick Selection:</label>
                     <div class="btn-group" role="group">
-                      <button type="button" class="btn btn-sm btn-outline-success" @click="selectAllGI">Select All
-                        GI</button>
-                      <button type="button" class="btn btn-sm btn-outline-success" @click="selectAllGII">Select All
-                        GII</button>
-                      <button type="button" class="btn btn-sm btn-outline-success" @click="selectAllGIII">Select All
-                        GIII</button>
-                      <button type="button" class="btn btn-sm btn-outline-warning" @click="clearAllRaces">Clear
-                        All</button>
+                      <button type="button" class="btn btn-sm btn-outline-success" @click="selectAllGI">Select All GI</button>
+                      <button type="button" class="btn btn-sm btn-outline-success" @click="selectAllGII">Select All GII</button>
+                      <button type="button" class="btn btn-sm btn-outline-success" @click="selectAllGIII">Select All GIII</button>
+                      <button type="button" class="btn btn-sm btn-outline-warning" @click="clearAllRaces">Clear All</button>
                     </div>
                   </div>
-                </div>
 
-                <!-- Filter Buttons -->
-                <div class="row mb-3">
-                  <div class="col-md-3">
+                  <div class="filter">
                     <label>🏆 Grade:</label>
                     <div class="btn-group btn-group-sm d-flex" role="group">
                       <button type="button" class="btn"
@@ -405,7 +485,7 @@
                       </button>
                     </div>
                   </div>
-                  <div class="col-md-3">
+                  <div class="filter">
                     <label>🌱 Terrain:</label>
                     <div class="btn-group btn-group-sm d-flex" role="group">
                       <button type="button" class="btn"
@@ -422,7 +502,7 @@
                       </button>
                     </div>
                   </div>
-                  <div class="col-md-6">
+                  <div class="distance">
                     <label>📏 Distance:</label>
                     <div class="btn-group btn-group-sm d-flex" role="group">
                       <button type="button" class="btn"
@@ -584,6 +664,9 @@
                 </div>
               </div>
             </div>
+            </div>
+            <div class="category-card" id="category-skill">
+              <div class="category-title">Skill Settings</div>
             <div class="form-group mb-0">
               <div class="row">
                 <div class="col">
@@ -657,7 +740,7 @@
               </div>
             </div>
 
-            <!-- Blacklist Section -->
+            <!-- Blacklist Section (inside Skill Settings card) -->
             <div class="form-group">
               <label class="form-label section-heading">
                 <i class="fas fa-ban"></i>
@@ -675,7 +758,7 @@
               </div>
             </div>
 
-            <!-- Skill List Section -->
+            <!-- Skill List Section (inside Skill Settings card) -->
             <div class="form-group">
               <div class="skill-list-header" @click="toggleSkillList">
                 <div class="skill-list-title">
@@ -687,12 +770,7 @@
                   <i class="fas" :class="showSkillList ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                 </div>
               </div>
-              <div class="manual-end-toggle">
-                <label>
-                  <input type="checkbox" v-model="manualPurchase">
-                  Purchase skill manually at the end of career
-                </label>
-              </div>
+              
 
               <div v-if="showSkillList" class="skill-list-content">
                 <!-- Skill Filter System -->
@@ -779,37 +857,39 @@
               </div>
             </div>
 
-            <!-- Skill Learning Settings -->
-            <div class="form-group">
-              <div class="row">
-                <div class="col-3">
-                  <div class="form-group">
-                    <label for="learnSkillOnlyUserProvidedSelector">Only learn skills listed above during
-                      training</label>
-                    <select v-model="learnSkillOnlyUserProvided" class="form-control"
-                      id="learnSkillOnlyUserProvidedSelector">
-                      <option :value=true>Yes</option>
-                      <option :value=false>No</option>
-                    </select>
+            <!-- Skill Learning Settings (inside Skill Settings card) -->
+            <div class="form-group toggle-row">
+              <div class="row align-items-center">
+                <div class="col-md-3">
+                  <label class="d-block mb-1">Only learn listed skills</label>
+                  <div class="token-toggle" role="group" aria-label="Only learn listed skills">
+                    <button type="button" class="token" :class="{ active: learnSkillOnlyUserProvided }" @click="learnSkillOnlyUserProvided = true">Yes</button>
+                    <button type="button" class="token" :class="{ active: !learnSkillOnlyUserProvided }" @click="learnSkillOnlyUserProvided = false">No</button>
                   </div>
                 </div>
-                <div class="col-3">
-                  <div class="form-group">
-                    <label for="learnSkillBeforeRaceSelector">Learn skills before races</label>
-                    <select disabled v-model="learnSkillBeforeRace" class="form-control" id="learnSkillBeforeRace">
-                      <option :value=true>Yes</option>
-                      <option :value=false>No</option>
-                    </select>
+                <div class="col-md-3">
+                  <label class="d-block mb-1">Learn before races</label>
+                  <div class="token-toggle" :class="{ disabled: true }" role="group" aria-label="Learn before races">
+                    <button type="button" class="token" :disabled="true">Yes</button>
+                    <button type="button" class="token active" :disabled="true">No</button>
                   </div>
                 </div>
-                <div class="col-3">
+                <div class="col-md-3">
                   <div class="form-group">
-                    <label for="inputSkillLearnThresholdLimit">Learn skills when skill points exceed this value</label>
+                    <label for="inputSkillLearnThresholdLimit">Learn when skill points ≥</label>
                     <input v-model="learnSkillThreshold" type="number" class="form-control"
                       id="inputSkillLearnThresholdLimit" placeholder="">
                   </div>
                 </div>
+                <div class="col-md-3">
+                  <label class="d-block mb-1">Manual purchase at end</label>
+                  <div class="token-toggle" role="group" aria-label="Manual purchase at end">
+                    <button type="button" class="token" :class="{ active: manualPurchase }" @click="manualPurchase = true">On</button>
+                    <button type="button" class="token" :class="{ active: !manualPurchase }" @click="manualPurchase = false">Off</button>
+                  </div>
+                </div>
               </div>
+            </div>
             </div>
           </form>
           <!-- <div class="part">
@@ -824,10 +904,7 @@
             </div>
           </div> -->
         </div>
-        <div class="modal-footer">
-          <span class="btn cancel-btn" v-on:click="cancelTask">Cancel</span>
-          <span class="btn auto-btn" v-on:click="addTask">Confirm</span>
-        </div>
+        <div class="modal-footer d-none"></div>
       </div>
       <!-- Aoharu Cup Configuration Modal -->
       <AoharuConfigModal v-model:show="showAoharuConfigModal" :preliminaryRoundSelections="preliminaryRoundSelections"
@@ -860,6 +937,44 @@
       </div>
     </div>
   </div>
+
+              <!-- Custom Character Change Confirmation Modal -->
+            <div v-if="showCharacterChangeModal" class="modal fade show character-change-modal" style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Character Filter Change</h5>
+          <button type="button" class="close" @click="closeCharacterChangeModal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>You have <strong>{{ extraRace.length }}</strong> race(s) selected.</p>
+          <div v-if="selectedCharacter">
+            <p>Changing to <strong>"{{ selectedCharacter }}"</strong> will:</p>
+            <ul>
+              <li>Show <strong>{{ getCompatibleRacesCount() }}</strong> compatible race(s)</li>
+              <li>Hide <strong>{{ getIncompatibleRacesCount() }}</strong> incompatible race(s)</li>
+            </ul>
+          </div>
+          <div v-else>
+            <p>Removing character filter will show all races.</p>
+          </div>
+          <p>What would you like to do with your current race selections?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="handleClearSelection">
+            <i class="fas fa-trash"></i> Clear Selection
+            <small class="d-block">Clear the entire selection</small>
+          </button>
+          <button type="button" class="btn btn-primary" @click="handleFilterSelection">
+            <i class="fas fa-filter"></i> Filter Selection Based on Character Compatibility
+            <small class="d-block">Keep the selection but only keep the character compatibility that has already selected</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -881,6 +996,14 @@ export default {
   },
   data: function () {
     return {
+      sectionList: [
+        { id: 'category-general', label: 'General' },
+        { id: 'category-preset', label: 'Preset & Support' },
+        { id: 'category-career', label: 'Career' },
+        { id: 'category-race', label: 'Race' },
+        { id: 'category-skill', label: 'Skills' }
+      ],
+      activeSection: 'category-general',
       manualPurchase: false,
       showAdvanceOption: false,
       showRaceList: false,
@@ -905,6 +1028,7 @@ export default {
       characterList: [],
       characterAptitudes: {},
       characterTrainingPeriods: {},
+      showCharacterChangeModal: false,
       fujikisekiShowMode: false,
       fujikisekiShowDifficulty: 1,
       levelDataList: [],
@@ -954,12 +1078,12 @@ export default {
       cultivatePresets: [],
       cultivateDefaultPresets: [
         {
-          name: "默认",
+          name: "Default",
           race_list: [],
           skill: "",
           skill_priority_list: [],
           expect_attribute: [800, 800, 800, 400, 400],
-          follow_support_card: { id: 10001, name: '在耀眼景色的前方', desc: '无声铃鹿' },
+          follow_support_card: { id: 10001, name: 'Beyond This Shining Moment', desc: 'Silence Suzuka' },
           follow_support_card_level: 50,
           clock_use_limit: 99,
           learn_skill_threshold: 9999,
@@ -969,12 +1093,12 @@ export default {
 
         },
         {
-          name: "小栗帽基础育成赛程",
-          race_list: [1701, 2303, 2401, 5208, 5407, 5904],
+          name: "Oguri Cap Basic Training Schedule",
+          race_list: [2013, 2046, 2056, 2251, 2101, 2113],
           skill: "",
           skill_priority_list: [],
           expect_attribute: [800, 650, 800, 300, 400],
-          follow_support_card: { id: 20004, name: '一颗安心糖', desc: '超级溪流' },
+          follow_support_card: { id: 20004, name: 'Piece of Mind', desc: 'Super Creek' },
           follow_support_card_level: 50,
           clock_use_limit: 99,
           learn_skill_threshold: 9999,
@@ -983,12 +1107,12 @@ export default {
           race_tactic_3: 4,
         },
         {
-          name: "大和赤骥基础育成赛程",
-          race_list: [1701, 2303],
+          name: "Daiwa Scarlet Basic Training Schedule",
+          race_list: [2013, 2046],
           skill: "",
           skill_priority_list: [],
           expect_attribute: [800, 600, 600, 300, 400],
-          follow_support_card: { id: 20004, name: '一颗安心糖', desc: '超级溪流' },
+          follow_support_card: { id: 20004, name: 'Piece of Mind', desc: 'Super Creek' },
           follow_support_card_level: 50,
           clock_use_limit: 99,
           learn_skill_threshold: 9999,
@@ -997,32 +1121,18 @@ export default {
           race_tactic_3: 4,
         },
         {
-          name: "目白麦昆基础育成赛程",
-          race_list: [2203, 2401],
+          name: "Mejiro Mcqueen Basic Training Schedule",
+          race_list: [2041, 2205],
           skill: "",
           skill_priority_list: [],
           expect_attribute: [700, 700, 600, 350, 400],
-          follow_support_card: { id: 20004, name: '一颗安心糖', desc: '超级溪流' },
+          follow_support_card: { id: 20004, name: 'Piece of Mind', desc: 'Super Creek' },
           follow_support_card_level: 50,
           clock_use_limit: 99,
           learn_skill_threshold: 9999,
           race_tactic_1: 4,
           race_tactic_2: 4,
           race_tactic_3: 4,
-        },
-        {
-          name: "历战小栗帽35战60w粉丝(需求觉醒3,借满破小海湾,种马速耐,支援卡带赛后加成高的)",
-          race_list: [1601, 1701, 1902, 2103, 2302, 2401, 2701, 2905, 3103, 3303, 3404, 3601, 4102, 4203, 4408, 4506, 4607, 4804, 4902, 5208, 5407, 5601, 5709, 5904, 6006, 6602, 6701, 6807, 7007, 7111, 7204],
-          skill: "大胃王",
-          skill_priority_list: [],
-          expect_attribute: [700, 500, 700, 350, 350],
-          follow_support_card: { id: 20004, name: '一颗安心糖', desc: '超级溪流' },
-          follow_support_card_level: 50,
-          clock_use_limit: 2,
-          learn_skill_threshold: 450,
-          race_tactic_1: 4,
-          race_tactic_2: 3,
-          race_tactic_3: 3
         }
       ],
       expectSpeedValue: 650,
@@ -1034,13 +1144,13 @@ export default {
       supportCardLevel: 50,
 
       presetsUse: {
-        name: "默认",
+        name: "Default",
         race_list: [],
         skill: "",
         skill_priority_list: [],
         skill_blacklist: "",
         expect_attribute: [650, 800, 650, 400, 400],
-        follow_support_card: { id: 10001, name: '在耀眼景色的前方', desc: '无声铃鹿' },
+        follow_support_card: { id: 10001, name: 'Beyond This Shining Moment', desc: 'Silence Suzuka' },
         follow_support_card_level: 50,
         clock_use_limit: 99,
         learn_skill_threshold: 9999,
@@ -1075,6 +1185,9 @@ export default {
       learnSkillThreshold: 9999,
       recoverTP: false,
       presetNameEdit: "",
+      presetAction: null,
+      overwritePresetName: "",
+      deletePresetName: "",
       successToast: undefined,
       extraWeight1: [0, 0, 0, 0, 0],
       extraWeight2: [0, 0, 0, 0, 0],
@@ -1121,6 +1234,7 @@ export default {
       availableTiers: ['', 'SS', 'S', 'A', 'B', 'C', 'D'],
       availableRarities: ['', 'Unique', 'Rare', 'Normal'],
       showSkillList: false
+      ,showPresetMenu: false
     }
   },
   computed: {
@@ -1150,13 +1264,13 @@ export default {
           const character = this.characterList.find(c => c.name === this.selectedCharacter);
           if (character) {
             // Check if race matches character's aptitude (terrain and distance)
-            const matchesTerrain = race.terrain === character.terrain;
+            const matchesCharacterTerrain = race.terrain === character.terrain;
 
             // Handle multiple distances (e.g., "Medium, Long")
             const characterDistances = character.distance.split(', ').map(d => d.trim());
-            const matchesDistance = characterDistances.includes(race.distance);
+            const matchesCharacterDistance = characterDistances.includes(race.distance);
 
-            const matchesAptitude = matchesTerrain && matchesDistance;
+            const matchesAptitude = matchesCharacterTerrain && matchesCharacterDistance;
 
             // Check if race date is within character's training periods
             const characterPeriods = this.characterTrainingPeriods[this.selectedCharacter];
@@ -1199,13 +1313,13 @@ export default {
           const character = this.characterList.find(c => c.name === this.selectedCharacter);
           if (character) {
             // Check if race matches character's aptitude (terrain and distance)
-            const matchesTerrain = race.terrain === character.terrain;
+            const matchesCharacterTerrain = race.terrain === character.terrain;
 
             // Handle multiple distances (e.g., "Medium, Long")
             const characterDistances = character.distance.split(', ').map(d => d.trim());
-            const matchesDistance = characterDistances.includes(race.distance);
+            const matchesCharacterDistance = characterDistances.includes(race.distance);
 
-            const matchesAptitude = matchesTerrain && matchesDistance;
+            const matchesAptitude = matchesCharacterTerrain && matchesCharacterDistance;
 
             // Check if race date is within character's training periods
             const characterPeriods = this.characterTrainingPeriods[this.selectedCharacter];
@@ -1248,13 +1362,13 @@ export default {
           const character = this.characterList.find(c => c.name === this.selectedCharacter);
           if (character) {
             // Check if race matches character's aptitude (terrain and distance)
-            const matchesTerrain = race.terrain === character.terrain;
+            const matchesCharacterTerrain = race.terrain === character.terrain;
 
             // Handle multiple distances (e.g., "Medium, Long")
             const characterDistances = character.distance.split(', ').map(d => d.trim());
-            const matchesDistance = characterDistances.includes(race.distance);
+            const matchesCharacterDistance = characterDistances.includes(race.distance);
 
-            const matchesAptitude = matchesTerrain && matchesDistance;
+            const matchesAptitude = matchesCharacterTerrain && matchesCharacterDistance;
 
             // Check if race date is within character's training periods
             const characterPeriods = this.characterTrainingPeriods[this.selectedCharacter];
@@ -1346,8 +1460,18 @@ export default {
     this.initSelect()
     this.getPresets()
     this.successToast = $('#liveToast').toast({})
+    this.$nextTick(() => {
+      this.initScrollSpy()
+    })
   },
   methods: {
+    togglePresetMenu() {
+      this.showPresetMenu = !this.showPresetMenu;
+    },
+    selectPresetAction(which) {
+      this.togglePresetAction(which);
+      this.showPresetMenu = false;
+    },
     loadCharacterData: function () {
       this.characterList = characterData.map(char => ({
         name: char.character_name,
@@ -1404,55 +1528,150 @@ export default {
       )
     },
     initSelect: function () {
-      this.selectedSupportCard = { id: 10001, name: '在耀眼景色的前方', desc: '无声铃鹿' }
+      this.selectedSupportCard = { id: 10001, name: 'Beyond This Shining Moment', desc: 'Silence Suzuka' }
       this.selectedUmamusumeTaskType = this.umamusumeTaskTypeList[0]
     },
     switchRaceList: function () {
       this.showRaceList = !this.showRaceList
     },
+    // Helper: check whether a race matches the currently selected character's aptitude and schedule
+    isRaceCompatibleWithSelectedCharacter(race) {
+      if (!this.selectedCharacter) return true
+      const character = this.characterList.find(c => c.name === this.selectedCharacter)
+      if (!character) return true
+      // Terrain/distance aptitude
+      const matchesTerrain = race.terrain === character.terrain
+      const characterDistances = character.distance.split(', ').map(d => d.trim())
+      const matchesDistance = characterDistances.includes(race.distance)
+      const matchesAptitude = matchesTerrain && matchesDistance
+      if (!matchesAptitude) return false
+      // Training period (by date label string)
+      const periods = this.characterTrainingPeriods[this.selectedCharacter]
+      if (!periods) return true
+      const inPeriod = (periods['Junior Year'] && periods['Junior Year'].includes(race.date)) ||
+                       (periods['Classic Year'] && periods['Classic Year'].includes(race.date)) ||
+                       (periods['Senior Year'] && periods['Senior Year'].includes(race.date))
+      return !!inPeriod
+    },
     // Quick selection methods
     selectAllGI: function () {
-      const allGIRaces = [
-        ...this.umamusumeRaceList_1.filter(race => race.type === 'GI'),
-        ...this.umamusumeRaceList_2.filter(race => race.type === 'GI'),
-        ...this.umamusumeRaceList_3.filter(race => race.type === 'GI')
-      ];
-      allGIRaces.forEach(race => {
-        if (!this.extraRace.includes(race.id)) {
-          this.extraRace.push(race.id);
-        }
-      });
+      const pool = [
+        ...this.umamusumeRaceList_1,
+        ...this.umamusumeRaceList_2,
+        ...this.umamusumeRaceList_3
+      ].filter(race => race.type === 'G1')
+       .filter(race => this.isRaceCompatibleWithSelectedCharacter(race))
+      pool.forEach(race => { if (!this.extraRace.includes(race.id)) this.extraRace.push(race.id) })
     },
     selectAllGII: function () {
-      const allGIIRaces = [
-        ...this.umamusumeRaceList_1.filter(race => race.type === 'GII'),
-        ...this.umamusumeRaceList_2.filter(race => race.type === 'GII'),
-        ...this.umamusumeRaceList_3.filter(race => race.type === 'GII')
-      ];
-      allGIIRaces.forEach(race => {
-        if (!this.extraRace.includes(race.id)) {
-          this.extraRace.push(race.id);
-        }
-      });
+      const pool = [
+        ...this.umamusumeRaceList_1,
+        ...this.umamusumeRaceList_2,
+        ...this.umamusumeRaceList_3
+      ].filter(race => race.type === 'G2')
+       .filter(race => this.isRaceCompatibleWithSelectedCharacter(race))
+      pool.forEach(race => { if (!this.extraRace.includes(race.id)) this.extraRace.push(race.id) })
     },
     selectAllGIII: function () {
-      const allGIIIRaces = [
-        ...this.umamusumeRaceList_1.filter(race => race.type === 'GIII'),
-        ...this.umamusumeRaceList_2.filter(race => race.type === 'GIII'),
-        ...this.umamusumeRaceList_3.filter(race => race.type === 'GIII')
-      ];
-      allGIIIRaces.forEach(race => {
-        if (!this.extraRace.includes(race.id)) {
-          this.extraRace.push(race.id);
-        }
-      });
+      const pool = [
+        ...this.umamusumeRaceList_1,
+        ...this.umamusumeRaceList_2,
+        ...this.umamusumeRaceList_3
+      ].filter(race => race.type === 'G3')
+       .filter(race => this.isRaceCompatibleWithSelectedCharacter(race))
+      pool.forEach(race => { if (!this.extraRace.includes(race.id)) this.extraRace.push(race.id) })
     },
     clearAllRaces: function () {
       this.extraRace = [];
     },
     onCharacterChange: function () {
-      // Reset race selection when character changes
+      // Smart filtering: Show custom confirmation modal when character changes
+      if (this.extraRace.length > 0) {
+        this.showCharacterChangeModal = true;
+      }
+    },
+    
+    getCompatibleRacesCount: function() {
+      if (!this.selectedCharacter) return 0;
+      
+      let count = 0;
+      // Count compatible races from all three race lists
+      [this.filteredRaces_1, this.filteredRaces_2, this.filteredRaces_3].forEach(races => {
+        if (races) count += races.length;
+      });
+      
+      return count;
+    },
+    
+    getIncompatibleRacesCount: function() {
+      if (!this.selectedCharacter) return 0;
+      
+      let totalRaces = 0;
+      let compatibleRaces = 0;
+      
+      // Count total races from all three race lists
+      [this.umamusumeRaceList_1, this.umamusumeRaceList_2, this.umamusumeRaceList_3].forEach(races => {
+        if (races) totalRaces += races.length;
+      });
+      
+      compatibleRaces = this.getCompatibleRacesCount();
+      return totalRaces - compatibleRaces;
+    },
+    
+    // Character change modal methods
+    closeCharacterChangeModal: function() {
+      this.showCharacterChangeModal = false;
+    },
+    
+    handleClearSelection: function() {
+      // Clear the entire selection
       this.extraRace = [];
+      this.closeCharacterChangeModal();
+    },
+    
+    handleFilterSelection: function() {
+      // Keep the selection but only keep races that are compatible with the selected character
+      if (this.selectedCharacter) {
+        const character = this.characterList.find(c => c.name === this.selectedCharacter);
+        if (character) {
+          // Filter races to only keep compatible ones
+          this.extraRace = this.extraRace.filter(raceId => {
+            // Find the race in any of the three race lists
+            let race = null;
+            [this.umamusumeRaceList_1, this.umamusumeRaceList_2, this.umamusumeRaceList_3].forEach(raceList => {
+              if (!race) {
+                race = raceList.find(r => r.id === raceId);
+              }
+            });
+            
+            if (!race) return false;
+            
+            // Check if race matches character's aptitude (terrain and distance)
+            const matchesTerrain = race.terrain === character.terrain;
+            
+            // Handle multiple distances (e.g., "Medium, Long")
+            const characterDistances = character.distance.split(', ').map(d => d.trim());
+            const matchesDistance = characterDistances.includes(race.distance);
+            
+            const matchesAptitude = matchesTerrain && matchesDistance;
+            
+            // Check if race date is within character's training periods
+            const characterPeriods = this.characterTrainingPeriods[this.selectedCharacter];
+            if (characterPeriods && characterPeriods.length > 0) {
+              const raceDate = new Date(race.date);
+              const isInTrainingPeriod = characterPeriods.some(period => {
+                const startDate = new Date(period.start);
+                const endDate = new Date(period.end);
+                return raceDate >= startDate && raceDate <= endDate;
+              });
+              return matchesAptitude && isInTrainingPeriod;
+            }
+            
+            return matchesAptitude;
+          });
+        }
+      }
+      this.closeCharacterChangeModal();
     },
     toggleRace: function (raceId) {
       const index = this.extraRace.indexOf(raceId);
@@ -1831,6 +2050,47 @@ export default {
         }
       )
     },
+    togglePresetAction: function (which) {
+      this.presetAction = this.presetAction === which ? null : which;
+    },
+    confirmAddPreset() {
+      if (!this.presetNameEdit || this.presetNameEdit.trim() === "") return;
+      if (this.presetNameEdit.trim() === 'Default') {
+        window.alert('"Default" is reserved. Please choose another name.');
+        return;
+      }
+      const exists = this.cultivatePresets.some(p => p.name === this.presetNameEdit);
+      if (exists && !window.confirm(`Preset "${this.presetNameEdit}" exists. Overwrite?`)) {
+        return;
+      }
+      const toastBody = document.querySelector('#liveToast .toast-body');
+      if (toastBody) toastBody.textContent = '✔ Preset saved successfully';
+      this.addPresets();
+      this.presetAction = null;
+      this.presetNameEdit = "";
+    },
+    confirmOverwritePreset() {
+      if (!this.overwritePresetName) return;
+      // For overwrite we simply save with the same name
+      this.presetNameEdit = this.overwritePresetName;
+      const toastBody = document.querySelector('#liveToast .toast-body');
+      if (toastBody) toastBody.textContent = '✔ Preset overwritten successfully';
+      this.addPresets();
+      this.presetAction = null;
+    },
+    confirmDeletePreset() {
+      if (!this.deletePresetName) return;
+      if (!window.confirm(`Delete preset \"${this.deletePresetName}\"?`)) return;
+      const payload = { name: this.deletePresetName };
+      this.axios.post("/umamusume/delete-preset", JSON.stringify(payload)).then(() => {
+        this.getPresets();
+        this.presetAction = null;
+        this.deletePresetName = "";
+        const toastBody = document.querySelector('#liveToast .toast-body');
+        if (toastBody) toastBody.textContent = '✔ Preset deleted successfully';
+        this.successToast.toast('show')
+      });
+    },
     onExtraWeightInput(arr, idx) {
       // 限制输入范围 [-1, 1]
       if (arr[idx] > 1) arr[idx] = 1;
@@ -1866,11 +2126,11 @@ export default {
     renderSupportCardText(card) {
       if (!card) return '';
       let type = '';
-      if (card.id >= 10000 && card.id < 20000) type = '速';
-      else if (card.id >= 20000 && card.id < 30000) type = '耐';
-      else if (card.id >= 30000 && card.id < 40000) type = '力';
-      else if (card.id >= 40000 && card.id < 50000) type = '根';
-      else if (card.id >= 50000 && card.id < 60000) type = '智';
+      if (card.id >= 10000 && card.id < 20000) type = 'Speed';
+      else if (card.id >= 20000 && card.id < 30000) type = 'Stamina';
+      else if (card.id >= 30000 && card.id < 40000) type = 'Power';
+      else if (card.id >= 40000 && card.id < 50000) type = 'Guts';
+      else if (card.id >= 50000 && card.id < 60000) type = 'Wit';
       if (type) {
         return `【${card.name}】${type}·${card.desc}`;
       } else {
@@ -1912,7 +2172,46 @@ export default {
     },
     toggleSkillList() {
       this.showSkillList = !this.showSkillList;
+    },
+    scrollToSection(id) {
+      const root = this.$refs.scrollPane;
+      const el = root ? root.querySelector(`#${id}`) : document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        this.activeSection = id;
+      }
+    },
+    initScrollSpy() {
+      const root = this.$refs.scrollPane;
+      if (!root) return;
+      this.onScrollSpy = () => {
+        const scrollTop = root.scrollTop;
+        let current = this.sectionList[0]?.id;
+        for (const section of this.sectionList) {
+          const el = root.querySelector(`#${section.id}`);
+          if (!el) continue;
+          const top = el.offsetTop;
+          if (top <= scrollTop + 100) {
+            current = section.id;
+          } else {
+            break;
+          }
+        }
+        this.activeSection = current;
+      };
+      root.addEventListener('scroll', this.onScrollSpy, { passive: true });
+      window.addEventListener('resize', this.onScrollSpy, { passive: true });
+      // run once
+      this.onScrollSpy();
+    },
+    destroyScrollSpy() {
+      const root = this.$refs.contentPane;
+      if (root && this.onScrollSpy) root.removeEventListener('scroll', this.onScrollSpy);
+      if (this.onScrollSpy) window.removeEventListener('resize', this.onScrollSpy);
     }
+  },
+  unmounted() {
+    this.destroyScrollSpy();
   },
   watch: {
 
@@ -1955,8 +2254,69 @@ export default {
 
 /* 确保modal body可以正确滚动 */
 .modal-body {
-  max-height: 70vh;
+  max-height: 80vh;
   overflow-y: auto;
+}
+
+.modal-body--split {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+}
+
+/* Enlarge modal size slightly */
+#create-task-list-modal .modal-dialog {
+  max-width: 1320px;
+  width: 96vw;
+}
+
+@media (min-width: 1440px) {
+  #create-task-list-modal .modal-dialog {
+    max-width: 1380px;
+  }
+}
+
+.side-nav {
+  position: sticky;
+  top: 16px;
+  height: fit-content;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.side-nav-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.side-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.side-nav-list li a {
+  display: block;
+  padding: 8px 10px;
+  color: #374151;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.side-nav-list li a:hover {
+  background: #f3f4f6;
+}
+
+.side-nav-list li a.active {
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 600;
+}
+
+.content-pane {
+  min-width: 0;
 }
 
 /* 遮罩层样式 - 让TaskEditModal背景变暗并阻止交互 */
@@ -1980,6 +2340,11 @@ export default {
 
 #create-task-list-modal.modal.show .modal-content.dimmed {
   opacity: 0.6;
+}
+
+/* Smooth scroll behavior for in-pane anchors */
+.content-pane {
+  scroll-behavior: smooth;
 }
 
 .aoharu-btn-bg {
@@ -2024,6 +2389,22 @@ export default {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
   padding: 8px;
+}
+
+/* Category cards (section grouping) */
+.category-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+
+.category-title {
+  font-weight: 700;
+  margin-bottom: 12px;
+  font-size: 16px;
 }
 
 .race-toggle {
@@ -2458,6 +2839,50 @@ export default {
   border: 1px solid #e9ecef;
 }
 
+/* Toggle row switch alignment */
+.toggle-row .form-check.form-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-row .form-check-input {
+  width: 2.25rem;
+  height: 1.125rem;
+}
+
+.toggle-row .form-check-label {
+  margin-left: 4px;
+}
+
+/* Token toggles */
+.token-toggle {
+  display: inline-flex;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.token-toggle .token {
+  background: transparent;
+  border: none;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.token-toggle .token.active {
+  background: #1e40af;
+  color: #ffffff;
+}
+
+.token-toggle.disabled .token {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .skill-notes-alert {
   display: flex;
   align-items: center;
@@ -2601,6 +3026,82 @@ export default {
   margin-bottom: 10px;
 }
 
+/* Header action buttons */
+.header-actions button.btn.btn-sm.btn-outline-secondary {
+  margin-right: 8px;
+}
+
+/* Reference palette tweaks */
+.btn.auto-btn,
+.btn.btn-primary {
+  background-color: #1e40af !important;
+  border-color: #1e40af !important;
+}
+
+.btn.btn-primary:hover,
+.btn.auto-btn:hover {
+  background-color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+}
+
+.btn-outline-primary {
+  color: #1e40af !important;
+  border-color: #1e40af !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: #eef2ff !important;
+}
+
+.btn-outline-danger {
+  color: #b91c1c !important;
+  border-color: #b91c1c !important;
+}
+
+.btn-outline-danger:hover {
+  background-color: #fee2e2 !important;
+}
+
+.btn-outline-success {
+  color: #166534 !important;
+  border-color: #166534 !important;
+}
+
+.btn-outline-success:hover {
+  background-color: #dcfce7 !important;
+}
+
+.btn.btn-sm {
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+}
+
+.btn-group .btn {
+  border-radius: 8px !important;
+}
+
+.dropdown-menu .dropdown-item {
+  font-size: 13px;
+}
+
+.side-nav-list li a.active {
+  background: #eef2ff;
+  color: #1e40af;
+}
+
+/* Align inline buttons with inputs */
+.input-group .btn.btn-sm {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.preset-actions .preset-save-group {
+  display: inline-flex;
+  align-items: stretch;
+}
+
 .skill-list-header:hover {
   background: linear-gradient(135deg, #0056b3, #004085);
   box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
@@ -2712,13 +3213,13 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #007bff, #0056b3);
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
   color: white;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
-  margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+  margin-bottom: 12px;
 }
 
 .race-options-header:hover {
@@ -2755,7 +3256,68 @@ export default {
 }
 
 .race-options-content {
-  margin-top: 15px;
+  margin-top: 12px;
   animation: fadeIn 0.3s ease;
+}
+
+/* Race filter layout tidy */
+.race-filters {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 12px;
+}
+
+.race-filters .filter {
+  grid-column: span 4;
+}
+
+.race-filters .quick {
+  grid-column: span 4;
+}
+
+.race-filters .distance {
+  grid-column: span 4;
+}
+
+.preset-actions .dropdown-menu {
+  display: block;
+  position: absolute;
+  transform: translateY(8px);
+  min-width: 220px;
+}
+
+/* Custom Character Change Modal Styles */
+.character-change-modal.show {
+  z-index: 1050;
+}
+
+.character-change-modal .modal-dialog {
+  max-width: 500px;
+}
+
+.character-change-modal .modal-footer .btn {
+  min-width: 200px;
+  margin: 5px;
+  text-align: left;
+  padding: 12px 16px;
+}
+
+.character-change-modal .modal-footer .btn small {
+  font-size: 11px;
+  opacity: 0.8;
+  margin-top: 4px;
+}
+
+.character-change-modal .modal-footer .btn i {
+  margin-right: 8px;
+  width: 16px;
+}
+
+.character-change-modal .modal-body ul {
+  margin-bottom: 0;
+}
+
+.character-change-modal .modal-body li {
+  margin-bottom: 5px;
 }
 </style>

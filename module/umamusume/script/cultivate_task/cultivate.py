@@ -31,6 +31,35 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
     if not ctx.cultivate_detail.turn_info.parse_main_menu_finish:
         parse_cultivate_main_menu(ctx, img)
         
+        # PRIORITY 1: Check for extra races first (highest priority)
+        from module.umamusume.asset.race_data import get_races_for_period
+        available_races = get_races_for_period(ctx.cultivate_detail.turn_info.date)
+        has_extra_race = len([race_id for race_id in ctx.cultivate_detail.extra_race_list 
+                             if race_id in available_races]) != 0
+        
+        if has_extra_race:
+            log.info("🏆 Extra races available for current date - prioritizing races above all else")
+            # Force parse training info to finish so we can proceed to race handling
+            ctx.cultivate_detail.turn_info.parse_train_info_finish = True
+            # Set race operation to override everything else
+            if ctx.cultivate_detail.turn_info.turn_operation is None:
+                ctx.cultivate_detail.turn_info.turn_operation = TurnOperation()
+            ctx.cultivate_detail.turn_info.turn_operation.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_RACE
+            
+            # Find and set the specific race ID from user's selected races
+            matching_races = [race_id for race_id in ctx.cultivate_detail.extra_race_list 
+                             if race_id in available_races]
+            if matching_races:
+                target_race_id = matching_races[0]  # Pick the first available selected race
+                ctx.cultivate_detail.turn_info.turn_operation.race_id = target_race_id
+                log.info(f"🎯 Set specific race ID: {target_race_id} from user's selected races")
+            else:
+                log.warning("⚠️ No matching races found in available races for current date")
+            
+            # Mark main menu parsing as complete
+            ctx.cultivate_detail.turn_info.parse_main_menu_finish = True
+            return
+        
         # Check for recreation friend notification if prioritize_recreation is enabled
         if ctx.cultivate_detail.prioritize_recreation:
             img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -46,8 +75,8 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
                 
             ctx.cultivate_detail.turn_info.parse_main_menu_finish = True
 
+    # Check if there are extra races available for current time period (for other logic)
     from module.umamusume.asset.race_data import get_races_for_period
-    # Check if there are extra races available for current time period
     available_races = get_races_for_period(ctx.cultivate_detail.turn_info.date)
     has_extra_race = len([race_id for race_id in ctx.cultivate_detail.extra_race_list 
                          if race_id in available_races]) != 0
@@ -111,6 +140,17 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
         elif turn_operation.turn_operation_type == TurnOperationType.TURN_OPERATION_TYPE_RACE:
             # Check if this is a URA race operation
             race_id = turn_operation.race_id
+            
+            # If no specific race_id is set but we have extra races available, prioritize them
+            if race_id is None and has_extra_race:
+                # Find the first available extra race for current date
+                available_races = get_races_for_period(ctx.cultivate_detail.turn_info.date)
+                for race_id in ctx.cultivate_detail.extra_race_list:
+                    if race_id in available_races:
+                        log.info(f"🏆 Prioritizing extra race {race_id} over other operations")
+                        turn_operation.race_id = race_id
+                        break
+            
             if race_id in [2381, 2382, 2385, 2386, 2387]:
                 # For URA races, check if the URA race UI is available first
                 img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -147,7 +187,8 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
                         # Let the AI decide what to do (training, rest, etc.)
                         ctx.ctrl.click_by_point(TO_TRAINING_SELECT)
             else:
-                # Regular race - proceed normally
+                # Regular race (including extra races) - proceed normally
+                log.info(f"🏁 Proceeding with race operation (race_id: {race_id})")
                 if 36 < ctx.cultivate_detail.turn_info.date <= 40 or 60 < ctx.cultivate_detail.turn_info.date <= 64:
                     ctx.ctrl.click_by_point(CULTIVATE_RACE_SUMMER)
                 else:
@@ -172,20 +213,27 @@ def script_cultivate_training_select(ctx: UmamusumeContext):
             return
         elif (ctx.cultivate_detail.turn_info.turn_operation.turn_operation_type ==
                 TurnOperationType.TURN_OPERATION_TYPE_RACE):
-            # For race operations, let the AI decide what to do (training, rest, etc.)
-            log.info("🏁 Race operation detected - letting AI decide next action")
-            # Force AI to make a decision based on current state
-            from module.umamusume.script.cultivate_task.ai import get_operation
-            new_operation = get_operation(ctx)
-            if new_operation and new_operation.turn_operation_type != TurnOperationType.TURN_OPERATION_TYPE_RACE:
-                # AI decided to do something else (training, rest, etc.)
-                log.info(f"🤖 AI decided to do {new_operation.turn_operation_type.name} instead of race")
-                ctx.cultivate_detail.turn_info.turn_operation = new_operation
-                # Continue with normal flow to execute the AI decision
-            else:
-                # AI still wants to race, proceed with race
-                log.info("🏁 AI confirmed race operation - proceeding with race")
+            # For race operations, check if we have extra races available
+            if has_extra_race:
+                log.info("🏁 Extra races available - redirecting to race instead of training")
+                # Go back to main menu to execute race operation
+                ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
                 return
+            else:
+                # No extra races, let the AI decide what to do (training, rest, etc.)
+                log.info("🏁 Race operation detected - letting AI decide next action")
+                # Force AI to make a decision based on current state
+                from module.umamusume.script.cultivate_task.ai import get_operation
+                new_operation = get_operation(ctx)
+                if new_operation and new_operation.turn_operation_type != TurnOperationType.TURN_OPERATION_TYPE_RACE:
+                    # AI decided to do something else (training, rest, etc.)
+                    log.info(f"🤖 AI decided to do {new_operation.turn_operation_type.name} instead of race")
+                    ctx.cultivate_detail.turn_info.turn_operation = new_operation
+                    # Continue with normal flow to execute the AI decision
+                else:
+                    # AI still wants to race, proceed with race
+                    log.info("🏁 AI confirmed race operation - proceeding with race")
+                    return
         else:
             ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
             return
@@ -247,7 +295,10 @@ def script_cultivate_training_select(ctx: UmamusumeContext):
                         img = ctx.ctrl.get_screen()
                         retry += 1
                     if retry == max_retry:
-                        return
+                        # Training is restricted by the game - clear it and continue
+                        log.info(f"🚫 Training {TrainingType(i + 1).name} is restricted by game - skipping")
+                        _clear_training(ctx, TrainingType(i + 1))
+                        continue
                     
                     thread = threading.Thread(target=_parse_training_in_thread,
                                             args=(ctx, img, TrainingType(i + 1)))
@@ -325,6 +376,12 @@ def script_umamusume_select(ctx: UmamusumeContext):
 
 
 def script_extend_umamusume_select(ctx: UmamusumeContext):
+    ctx.ctrl.click_by_point(TO_CULTIVATE_PREPARE_AUTO_SELECT)
+    time.sleep(1)
+    ctx.ctrl.click_by_point(TO_CULTIVATE_PREPARE_INCLUDE_GUEST)
+    time.sleep(1)
+    ctx.ctrl.click_by_point(TO_CULTIVATE_PREPARE_CONFIRM)
+    time.sleep(1)
     ctx.ctrl.click_by_point(TO_CULTIVATE_PREPARE_NEXT)
 
 

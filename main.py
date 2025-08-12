@@ -3,6 +3,8 @@ import threading
 import subprocess
 import os
 import yaml
+import time
+import cv2
 
 from bot.base.manifest import register_app
 from bot.engine.scheduler import scheduler
@@ -152,15 +154,106 @@ def update_config(device_name):
         return False
 
 
+def run_health_checks():
+    """Run health checks after device selection"""
+    print(" Running connection health checks...")
+    
+    # Test ADB connection
+    try:
+        adb_path = os.path.join("deps", "adb", "adb.exe")
+        result = subprocess.run([adb_path, "devices"], 
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0 and selected_device in result.stdout:
+            print("✅ ADB connection: OK")
+        else:
+            print("❌ ADB connection: FAILED")
+            return False
+    except Exception as e:
+        print(f"❌ ADB health check failed: {e}")
+        return False
+    
+    # Test device responsiveness
+    try:
+        result = subprocess.run([adb_path, "-s", selected_device, "shell", "echo", "test"], 
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print("✅ Device responsiveness: OK")
+        else:
+            print("❌ Device responsiveness: FAILED")
+            return False
+    except Exception as e:
+        print(f"❌ Device health check failed: {e}")
+        return False
+    
+    # Test Umamusume detection
+    if check_umamusume_running(selected_device):
+        print("✅ Umamusume detection: OK")
+    else:
+        print("⚠️  Umamusume not running (this is OK)")
+    
+    # Test screenshot quality (THIS IS THE KEY TEST)
+    try:
+        print(" Testing screenshot quality...")
+        import uiautomator2 as u2
+        print("   🔌 Connecting to device...")
+        device = u2.connect(selected_device)
+        print("   ✅ Device connected successfully")
+        
+        # Take multiple screenshots to test consistency
+        screenshots = []
+        print("   Taking screenshots (this may take a moment)...")
+        for i in range(3):
+            print(f"      Screenshot {i+1}/3...")
+            screenshot = device.screenshot(format='opencv')
+            if screenshot is not None:
+                screenshots.append(screenshot)
+                print(f"      ✅ Screenshot {i+1}: {screenshot.shape[1]}x{screenshot.shape[0]} pixels")
+            else:
+                print(f"      ❌ Screenshot {i+1}: FAILED")
+            time.sleep(0.5)
+        
+        if len(screenshots) < 3:
+            print("❌ Screenshot consistency: FAILED")
+            return False
+            
+        print("   🔍 Analyzing screenshot quality...")
+        # Check if screenshots are identical (corrupted/static)
+        if screenshots[0].std() < 5:  # Very low variance = corrupted
+            print("❌ Screenshot quality: CORRUPTED (static image)")
+            return False
+            
+        # Check if screenshots are too similar (display pipeline stuck)
+        print("   🔄 Checking for display pipeline issues...")
+        diff1 = cv2.absdiff(screenshots[0], screenshots[1])
+        diff2 = cv2.absdiff(screenshots[1], screenshots[2])
+        if diff1.mean() < 1 and diff2.mean() < 1:
+            print("❌ Screenshot quality: STUCK (display not updating)")
+            return False
+            
+        print("✅ Screenshot quality: OK")
+        
+    except Exception as e:
+        print(f"❌ Screenshot test failed: {e}")
+        return False
+    
+    print("✅ All health checks passed!")
+    return True
+
+
 if __name__ == '__main__':
     if sys.version_info.minor != 10 or sys.version_info.micro != 9:
-        print("\033[33m{}\033[0m".format("注意：python 版本号不正确，可能无法正常运行"))
-        print("建议python版本：3.10.9 当前：" + sys.version)
+        print("\033[33m{}\033[0m".format("Warning: Python version is incorrect, may not run properly"))
+        print("Recommended Python version: 3.10.9  Current: " + sys.version)
     
     # Device selection
     selected_device = select_device()
     if selected_device is None:
         print("❌ No device selected. Exiting.")
+        sys.exit(1)
+    
+    # Run health checks
+    if not run_health_checks():
+        print("❌ Health checks failed. Please check your setup and try again.")
         sys.exit(1)
     
     # Update config with selected device

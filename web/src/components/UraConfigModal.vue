@@ -2,11 +2,17 @@
   <div id="ura-config-modal" class="modal fade" data-backdrop="static" data-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content" @click.stop>
-        <h5 class="modal-header">URA Configuration</h5>
+        <div class="modal-header d-flex align-items-center justify-content-between">
+          <h5 class="mb-0">URA Configuration</h5>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary me-2" @click="cancel">Cancel</button>
+            <button class="btn btn-sm btn--primary" @click="confirm">Confirm</button>
+          </div>
+        </div>
         <div class="modal-body">
           <!-- Support Card Inspiration Additional Weight -->
-          <div class="form-group">
-            <h5><b>(Test)</b> Support Card Inspiration (!) Additional Weight</h5>
+          <div class="form-group section-card p-3 mb-3">
+            <h6 class="mb-2"><b>(Test)</b> Support Card Inspiration (!) Additional Weight</h6>
             <p>Additional weight provided for training selection when support cards show inspiration (!). Multiple exclamation marks in a single training only count once.</p>
             <p>Settable range [0, 1]. 0 means support card inspiration has no impact on training selection, 1 means always choose training with inspiration.</p>
             <div class="row">
@@ -59,7 +65,7 @@
           </div>
           
           <!-- Reset Skill Inspiration Weight Configuration -->
-          <div class="form-group">
+          <div class="form-group section-card p-3">
             <label for="ura-reset-skill-event-weight-list">Reset skill inspiration weight to 0 after learning these skills</label>
             <textarea 
               type="text" 
@@ -71,9 +77,7 @@
             ></textarea>
           </div>
         </div>
-        <div class="modal-footer">
-          <span class="btn auto-btn confirm-btn-large" v-on:click="confirm">Confirm</span>
-        </div>
+        <div class="modal-footer d-none"></div>
       </div>
     </div>
   </div>
@@ -196,6 +200,8 @@ export default {
   z-index: 1061;
 }
 
+.section-card{border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 2px 4px rgba(0,0,0,.06);} 
+
 /* Cancel button style */
 .cancel-btn {
   background-color: #dc3545 !important;
@@ -216,18 +222,5 @@ export default {
 }
 
 /* Enlarge confirm button */
-.confirm-btn-large {
-  background-color: #0faedf !important;
-  color: white !important;
-  padding: 0.5rem 1rem !important;
-  font-size: 1rem !important;
-  font-weight: 400 !important;
-  min-width: 60px;
-  min-height: 40px;
-}
-
-.confirm-btn-large:hover {
-  background-color: #1ea7e1 !important;
-  color: white !important;
-}
+/* header buttons reuse global theme classes */
 </style>

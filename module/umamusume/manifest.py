@@ -8,9 +8,9 @@ from module.umamusume.context import build_context
 from module.umamusume.hook import after_hook, before_hook
 from module.umamusume.script.cultivate_task.cultivate import *
 from module.umamusume.script.cultivate_task.info import script_info
-from module.umamusume.protocol.preset import AddPresetRequest
+from module.umamusume.protocol.preset import AddPresetRequest, DeletePresetRequest
 from module.umamusume.task import UmamusumeTaskType, build_task
-from module.umamusume.user_data import read_presets, write_preset
+from module.umamusume.user_data import read_presets, write_preset, delete_preset_by_name
 
 script_dicts: Dict[UmamusumeTaskType, dict] = {
     UmamusumeTaskType.UMAMUSUME_TASK_TYPE_CULTIVATE: {
@@ -105,4 +105,11 @@ def get_presets():
 @server.post("/umamusume/add-presets")
 def add_preset(req: AddPresetRequest):
     write_preset(req.preset)
+    return
+
+
+@server.post("/umamusume/delete-preset")
+def delete_preset(req: DeletePresetRequest):
+    # best-effort delete; return regardless
+    delete_preset_by_name(req.name)
     return

@@ -12,11 +12,132 @@ from module.umamusume.manifest import UmamusumeManifest
 from uvicorn import run
 
 
+def _get_adb_path():
+    """Resolve bundled adb path."""
+    return os.path.join("deps", "adb", "adb.exe")
+
+
+def _run_adb(args, timeout=10, capture_output=True, text=True):
+    """Run an adb command with the bundled binary and return CompletedProcess."""
+    adb_path = _get_adb_path()
+    return subprocess.run([adb_path] + args, capture_output=capture_output, text=text, timeout=timeout)
+
+
+def _soft_recover_device(device_id):
+    """Attempt a non-destructive recovery of adb/uiautomator2 for a single device.
+
+    Steps:
+    - Remove adb forwards for the device (cleans stale 7912 bindings)
+    - Kill/start adb server (what you usually do manually)
+    - Wait for device to be ready again
+    - Run uiautomator2 healthcheck to restart atx-agent if needed
+    """
+    try:
+        print("   ♻️  Attempting auto-recovery (safe)…")
+        # Best-effort forward removal (ignore failures)
+        try:
+            _run_adb(["-s", device_id, "forward", "--remove-all"], timeout=5)
+        except Exception:
+            pass
+
+        # Restart adb server
+        try:
+            _run_adb(["kill-server"], timeout=5)
+        except Exception:
+            pass
+        _run_adb(["start-server"], timeout=10)
+
+        # Ensure target device comes back online
+        _run_adb(["-s", device_id, "wait-for-device"], timeout=20)
+
+        # Ping device quickly
+        pong = _run_adb(["-s", device_id, "shell", "echo", "pong"], timeout=5)
+        if pong.returncode != 0:
+            print("   ⚠️  Device not responsive yet; will still try healthcheck…")
+
+        # Light uiautomator2 warmup (avoid heavy healthcheck that may reinstall UIA APKs)
+        try:
+            import uiautomator2 as u2
+            d = u2.connect(device_id)
+            # Warm up a simple RPC that doesn't require UIAutomator service
+            _ = d.window_size()
+            # Also ensure adb shell is responsive
+            _run_adb(["-s", device_id, "shell", "echo", "ok"], timeout=5)
+            time.sleep(0.2)
+        except Exception as e:
+            print(f"   ⚠️  uiautomator2 warmup failed: {e}")
+        print("   ✅ Auto-recovery step completed")
+    except Exception as e:
+        print(f"   ❌ Auto-recovery failed: {e}")
+
+
+def _screenshot_probe(device_id, samples=3, delay=0.5):
+    """Try to take several screenshots via uiautomator2 and validate basic quality."""
+    import uiautomator2 as u2
+    print("   🔌 Connecting to device…")
+    d = u2.connect(device_id)
+    print("   ✅ Device connected successfully")
+
+    screenshots = []
+    print("   Taking screenshots (this may take a moment)…")
+    for i in range(samples):
+        print(f"      Screenshot {i+1}/{samples}…")
+        img = d.screenshot(format='opencv')
+        if img is not None:
+            screenshots.append(img)
+            print(f"      ✅ Screenshot {i+1}: {img.shape[1]}x{img.shape[0]} pixels")
+        else:
+            print(f"      ❌ Screenshot {i+1}: FAILED")
+        time.sleep(delay)
+
+    if len(screenshots) < samples:
+        raise RuntimeError("insufficient_screenshots")
+
+    print("   🔍 Analyzing screenshot quality…")
+    if screenshots[0].std() < 5:
+        raise RuntimeError("corrupted_static_image")
+
+    print("   🔄 Checking for display pipeline issues…")
+    diff1 = cv2.absdiff(screenshots[0], screenshots[1]).mean()
+    diff2 = cv2.absdiff(screenshots[1], screenshots[2]).mean()
+    if diff1 < 1 and diff2 < 1:
+        raise RuntimeError("display_stuck")
+
+    print("✅ Screenshot quality: OK")
+
+
+def _finalize_services_light(device_id: str, timeout_sec: float = 6.0) -> bool:
+    """Warm up uiautomator2 lightly without risking APK installs, with timeout."""
+    result = {"ok": False, "err": None}
+
+    def _task():
+        try:
+            import uiautomator2 as u2
+            d = u2.connect(device_id)
+            _ = d.window_size()
+            time.sleep(0.2)
+            result["ok"] = True
+        except Exception as e:  # noqa: BLE001
+            result["err"] = e
+
+    t = threading.Thread(target=_task, daemon=True)
+    t.start()
+    t.join(timeout=timeout_sec)
+    if t.is_alive():
+        print("⚠️  Finalization timed out; continuing without it")
+        return False
+    if not result["ok"]:
+        print(f"⚠️  Could not finalize device services: {result['err']}")
+        return False
+    print("✅ Device services ready")
+    return True
+
+
 def get_adb_devices():
     """Get list of connected ADB devices"""
     try:
         # Use the adb from deps directory
-        adb_path = os.path.join("deps", "adb", "adb.exe")
+        adb_path = _get_adb_path()
         
         if not os.path.exists(adb_path):
             print("❌ ADB not found in deps/adb/ directory")
@@ -66,7 +187,7 @@ def get_adb_devices():
 def check_umamusume_running(device_id):
     """Check if Umamusume is running on the device"""
     try:
-        adb_path = os.path.join("deps", "adb", "adb.exe")
+        adb_path = _get_adb_path()
         cmd = [adb_path, "-s", device_id, "shell", "dumpsys", "activity", "activities"]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
         
@@ -160,7 +281,7 @@ def run_health_checks():
     
     # Test ADB connection
     try:
-        adb_path = os.path.join("deps", "adb", "adb.exe")
+        adb_path = _get_adb_path()
         result = subprocess.run([adb_path, "devices"], 
                               capture_output=True, text=True, timeout=10)
         if result.returncode == 0 and selected_device in result.stdout:
@@ -192,49 +313,19 @@ def run_health_checks():
         print("⚠️  Umamusume not running (this is OK)")
     
     # Test screenshot quality (THIS IS THE KEY TEST)
+    print(" Testing screenshot quality…")
     try:
-        print(" Testing screenshot quality...")
-        import uiautomator2 as u2
-        print("   🔌 Connecting to device...")
-        device = u2.connect(selected_device)
-        print("   ✅ Device connected successfully")
-        
-        # Take multiple screenshots to test consistency
-        screenshots = []
-        print("   Taking screenshots (this may take a moment)...")
-        for i in range(3):
-            print(f"      Screenshot {i+1}/3...")
-            screenshot = device.screenshot(format='opencv')
-            if screenshot is not None:
-                screenshots.append(screenshot)
-                print(f"      ✅ Screenshot {i+1}: {screenshot.shape[1]}x{screenshot.shape[0]} pixels")
-            else:
-                print(f"      ❌ Screenshot {i+1}: FAILED")
-            time.sleep(0.5)
-        
-        if len(screenshots) < 3:
-            print("❌ Screenshot consistency: FAILED")
-            return False
-            
-        print("   🔍 Analyzing screenshot quality...")
-        # Check if screenshots are identical (corrupted/static)
-        if screenshots[0].std() < 5:  # Very low variance = corrupted
-            print("❌ Screenshot quality: CORRUPTED (static image)")
-            return False
-            
-        # Check if screenshots are too similar (display pipeline stuck)
-        print("   🔄 Checking for display pipeline issues...")
-        diff1 = cv2.absdiff(screenshots[0], screenshots[1])
-        diff2 = cv2.absdiff(screenshots[1], screenshots[2])
-        if diff1.mean() < 1 and diff2.mean() < 1:
-            print("❌ Screenshot quality: STUCK (display not updating)")
-            return False
-            
-        print("✅ Screenshot quality: OK")
-        
+        _screenshot_probe(selected_device)
     except Exception as e:
+        # First failure -> try one auto-recovery cycle then retry once
         print(f"❌ Screenshot test failed: {e}")
-        return False
+        print("   🛠️  Running one-shot auto-recovery and retry…")
+        _soft_recover_device(selected_device)
+        try:
+            _screenshot_probe(selected_device)
+        except Exception as e2:
+            print(f"❌ Screenshot test failed again after recovery: {e2}")
+            return False
     
     print("✅ All health checks passed!")
     return True
@@ -256,6 +347,10 @@ if __name__ == '__main__':
         print("❌ Health checks failed. Please check your setup and try again.")
         sys.exit(1)
     
+    # Final stabilization pass before starting services
+    print("🔧 Finalizing device services…")
+    _finalize_services_light(selected_device)
+
     # Update config with selected device
     if not update_config(selected_device):
         print("❌ Failed to update config. Exiting.")

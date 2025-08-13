@@ -1,0 +1,28 @@
+{
+  "name": "Basic Career Preset",
+  "scenario": 1,
+  "race_list": [],
+  "skill_priority_list": [],
+  "skill_blacklist": "",
+  "expect_attribute": [800, 800, 800, 400, 400],
+  "follow_support_card": {"id": 10001, "name": "Beyond This Shining Moment", "desc": "Silence Suzuka"},
+  "follow_support_card_level": 50,
+  "clock_use_limit": 99,
+  "learn_skill_threshold": 9999,
+  "race_tactic_1": 4,
+  "race_tactic_2": 4,
+  "race_tactic_3": 4,
+  "extraWeight": [[0,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0]],
+  "motivation_threshold_year1": 3,
+  "motivation_threshold_year2": 4,
+  "motivation_threshold_year3": 4,
+  "prioritize_recreation": false,
+  "selectedSkills": [],
+  "blacklistedSkills": [],
+  "skillAssignments": {},
+  "activePriorities": [0],
+  "ura_config": {
+    "skillEventWeight": [0,0,0],
+    "resetSkillEventWeightList": ""
+  }
+}

@@ -652,6 +652,7 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
 
 
 def find_skill(ctx: UmamusumeContext, img, skill: list[str], learn_any_skill: bool) -> bool:
+    log.debug(f"🔍 find_skill called with {len(skill)} skills: {skill}")
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     find = False
     while True:
@@ -663,13 +664,15 @@ def find_skill(ctx: UmamusumeContext, img, skill: list[str], learn_any_skill: bo
                 skill_info_img = img[pos[0][1] - 65:pos[1][1] + 75, pos[0][0] - 470: pos[1][0] + 150]
                 if not image_match(skill_info_img, REF_SKILL_LEARNED).find_match:
                     skill_name_img = skill_info_img[10: 47, 100: 445]
-                    text = ocr_line(skill_name_img)
+                    text = ocr_line(skill_name_img, lang="en")  # Use English OCR for Global version
+                    log.debug(f"🔍 find_skill - OCR detected skill: '{text}'")
                     result = find_similar_skill_name(text, skill, 0.7)
-                    # print(text + "->" + result)
+                    log.debug(f"🔍 find_skill - Similar skill match: '{text}' -> '{result}'")
+                    
                     if result != "" or learn_any_skill:
                         tmp_img = ctx.ctrl.get_screen()
-                        pt_text = re.sub("\\D", "", ocr_line(tmp_img[400: 440, 490: 665]))
-                        skill_pt_cost_text = re.sub("\\D", "", ocr_line(skill_info_img[69: 99, 525: 588]))
+                        pt_text = re.sub("\\D", "", ocr_line(tmp_img[400: 440, 490: 665], lang="en"))
+                        skill_pt_cost_text = re.sub("\\D", "", ocr_line(skill_info_img[69: 99, 525: 588], lang="en"))
                         
                         # Handle empty cost (Global Server UI compatibility) - same as get_skill_list()
                         if not skill_pt_cost_text or skill_pt_cost_text == '':
@@ -682,7 +685,7 @@ def find_skill(ctx: UmamusumeContext, img, skill: list[str], learn_any_skill: bo
                             
                             for i, alt_region in enumerate(alt_cost_regions):
                                 try:
-                                    alt_cost_text = ocr_line(alt_region)
+                                    alt_cost_text = ocr_line(alt_region, lang="en")
                                     alt_cost = re.sub("\\D", "", alt_cost_text)
                                     if alt_cost and alt_cost != '':
                                         skill_pt_cost_text = alt_cost
@@ -710,6 +713,9 @@ def find_skill(ctx: UmamusumeContext, img, skill: list[str], learn_any_skill: bo
                                                "Bonus Skills：" + text)
                                 if result in skill:
                                     skill.remove(result)
+                                    log.info(f"✅ Removed '{result}' from skill list. Remaining: {skill}")
+                                else:
+                                    log.warning(f"⚠️ Skill '{result}' not found in skill list: {skill}")
                                 ctx.cultivate_detail.learn_skill_selected = True
                                 find = True
                             else:
@@ -742,8 +748,8 @@ def get_skill_list(img, skill: list[str], skill_blacklist: list[str]) -> list:
 
                 skill_name_img = skill_info_img[10: 47, 100: 445]
                 skill_cost_img = skill_info_img[69: 99, 525: 588]
-                text = ocr_line(skill_name_img)
-                cost_text = ocr_line(skill_cost_img)
+                text = ocr_line(skill_name_img, lang="en")  # Use English OCR for Global version
+                cost_text = ocr_line(skill_cost_img, lang="en")  # Use English OCR for Global version
                 cost = re.sub("\\D", "", cost_text)
                 
                 # Debug: Log OCR text for skill names
@@ -760,7 +766,7 @@ def get_skill_list(img, skill: list[str], skill_blacklist: list[str]) -> list:
                     
                     for i, alt_region in enumerate(alt_cost_regions):
                         try:
-                            alt_cost_text = ocr_line(alt_region)
+                            alt_cost_text = ocr_line(alt_region, lang="en")
                             alt_cost = re.sub("\\D", "", alt_cost_text)
                             if alt_cost and alt_cost != '':
                                 cost = alt_cost

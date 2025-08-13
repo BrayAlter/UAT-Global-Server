@@ -814,8 +814,12 @@
                     </div>
                   </div>
                   <div class="row mt-2">
-                    <div class="col">
-                      <button type="button" class="btn btn-outline-secondary btn-sm" @click="clearSkillFilters">
+                    <div class="col-md-8">
+                      <label class="filter-label">Search Skill</label>
+                      <input v-model.trim="skillFilter.query" type="text" class="form-control form-control-sm" placeholder="Search by skill name or description" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                      <button type="button" class="btn btn-outline-secondary btn-sm ml-auto" @click="clearSkillFilters">
                         <i class="fas fa-times"></i> Clear Filters
                       </button>
                     </div>
@@ -1076,65 +1080,6 @@ export default {
       umamusumeRaceList_2: [],
       umamusumeRaceList_3: [],
       cultivatePresets: [],
-      cultivateDefaultPresets: [
-        {
-          name: "Default",
-          race_list: [],
-          skill: "",
-          skill_priority_list: [],
-          expect_attribute: [800, 800, 800, 400, 400],
-          follow_support_card: { id: 10001, name: 'Beyond This Shining Moment', desc: 'Silence Suzuka' },
-          follow_support_card_level: 50,
-          clock_use_limit: 99,
-          learn_skill_threshold: 9999,
-          race_tactic_1: 4,
-          race_tactic_2: 4,
-          race_tactic_3: 4,
-
-        },
-        {
-          name: "Oguri Cap Basic Training Schedule",
-          race_list: [2013, 2046, 2056, 2251, 2101, 2113],
-          skill: "",
-          skill_priority_list: [],
-          expect_attribute: [800, 650, 800, 300, 400],
-          follow_support_card: { id: 20004, name: 'Piece of Mind', desc: 'Super Creek' },
-          follow_support_card_level: 50,
-          clock_use_limit: 99,
-          learn_skill_threshold: 9999,
-          race_tactic_1: 4,
-          race_tactic_2: 4,
-          race_tactic_3: 4,
-        },
-        {
-          name: "Daiwa Scarlet Basic Training Schedule",
-          race_list: [2013, 2046],
-          skill: "",
-          skill_priority_list: [],
-          expect_attribute: [800, 600, 600, 300, 400],
-          follow_support_card: { id: 20004, name: 'Piece of Mind', desc: 'Super Creek' },
-          follow_support_card_level: 50,
-          clock_use_limit: 99,
-          learn_skill_threshold: 9999,
-          race_tactic_1: 4,
-          race_tactic_2: 4,
-          race_tactic_3: 4,
-        },
-        {
-          name: "Mejiro Mcqueen Basic Training Schedule",
-          race_list: [2041, 2205],
-          skill: "",
-          skill_priority_list: [],
-          expect_attribute: [700, 700, 600, 350, 400],
-          follow_support_card: { id: 20004, name: 'Piece of Mind', desc: 'Super Creek' },
-          follow_support_card_level: 50,
-          clock_use_limit: 99,
-          learn_skill_threshold: 9999,
-          race_tactic_1: 4,
-          race_tactic_2: 4,
-          race_tactic_3: 4,
-        }
-      ],
       expectSpeedValue: 650,
       expectStaminaValue: 600,
       expectPowerValue: 650,
@@ -1144,7 +1089,7 @@ export default {
       supportCardLevel: 50,
 
       presetsUse: {
-        name: "Default",
+        name: "Basic Career Preset",
         race_list: [],
         skill: "",
         skill_priority_list: [],
@@ -1227,7 +1172,8 @@ export default {
         strategy: '',
         distance: '',
         tier: '',
-        rarity: ''
+        rarity: '',
+        query: ''
       },
       availableStrategies: ['', 'Front Runner', 'Pace Chaser', 'Late Surger', 'End Closer'],
       availableDistances: ['', 'Sprint', 'Mile', 'Medium', 'Long'],
@@ -1429,7 +1375,7 @@ export default {
       return grouped;
     },
     filteredSkillsByType() {
-      const { strategy, distance, tier, rarity } = this.skillFilter;
+      const { strategy, distance, tier, rarity, query } = this.skillFilter;
       const allSkills = skillsData;
 
       // Filter skills based on selected criteria
@@ -1438,7 +1384,11 @@ export default {
         const matchesDistance = !distance || (skill.distance && skill.distance === distance);
         const matchesTier = !tier || (skill.tier && skill.tier === tier);
         const matchesRarity = !rarity || (skill.rarity && skill.rarity === rarity);
-        return matchesStrategy && matchesDistance && matchesTier && matchesRarity;
+        const q = (query || '').toLowerCase();
+        const matchesQuery = !q ||
+          (skill.name && skill.name.toLowerCase().includes(q)) ||
+          (skill.description && skill.description.toLowerCase().includes(q));
+        return matchesStrategy && matchesDistance && matchesTier && matchesRarity && matchesQuery;
       });
 
       // Group filtered skills by type
@@ -1966,10 +1916,8 @@ export default {
     getPresets: function () {
       this.axios.post("/umamusume/get-presets", "").then(
         res => {
-          let tmplist = []
-          tmplist = tmplist.concat(this.cultivateDefaultPresets)
-          tmplist = tmplist.concat(res.data)
-          this.cultivatePresets = tmplist
+          // All presets now come from the server (including starter presets)
+          this.cultivatePresets = res.data
         }
       )
     },
@@ -2167,7 +2115,8 @@ export default {
         strategy: '',
         distance: '',
         tier: '',
-        rarity: ''
+        rarity: '',
+        query: ''
       };
     },
     toggleSkillList() {

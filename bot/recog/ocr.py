@@ -11,15 +11,17 @@ OCR_CH = paddleocr.PaddleOCR(lang="ch", show_log=False, use_angle_cls=False)
 OCR_EN = paddleocr.PaddleOCR(lang="en", show_log=False, use_angle_cls=False)
 
 # ocr 文字识别图片
-def ocr(img, lang="ch"):
-    if lang == "ch":
-        return OCR_CH.ocr(img, cls=False)
+def ocr(img, lang="en"):
+    if lang == "en":
+        return OCR_EN.ocr(img, cls=False)
     if lang == "japan":
         return OCR_JP.ocr(img, cls=False)
+    if lang == "ch":
+        return OCR_CH.ocr(img, cls=False)
 
 
 # ocr_line 文字识别图片，返回所有出现的文字
-def ocr_line(img, lang="ch"):
+def ocr_line(img, lang="en"):
     ocr_result = ocr(img, lang)
     text = ""
     ocr_result = ocr_result[0]

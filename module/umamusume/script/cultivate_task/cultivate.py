@@ -99,11 +99,8 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
             and not ctx.cultivate_detail.turn_info.turn_learn_skill_done
             and not skip_auto_skill_learning):
         log.info(f"🎯 Auto-learning skills - Skill points: {ctx.cultivate_detail.turn_info.uma_attribute.skill_point}")
-        if len(ctx.cultivate_detail.learn_skill_list) > 0 or not ctx.cultivate_detail.learn_skill_only_user_provided:
-            ctx.ctrl.click_by_point(CULTIVATE_SKILL_LEARN)
-        else:
-            ctx.cultivate_detail.learn_skill_done = True
-            ctx.cultivate_detail.turn_info.turn_learn_skill_done = True
+        # Always go to skill menu to scan for available skills - don't exit early
+        ctx.ctrl.click_by_point(CULTIVATE_SKILL_LEARN)
         ctx.cultivate_detail.turn_info.parse_main_menu_finish = False
         return
     else:
@@ -750,6 +747,7 @@ def script_cultivate_learn_skill(ctx: UmamusumeContext):
     if ctx.cultivate_detail.learn_skill_done:
         # If skills are already learned and confirmed, exit skill learning
         log.info("✅ Skills already learned and confirmed - exiting skill learning")
+        log.debug(f"🔍 learn_skill_done flag was set to True - checking where this happened")
         ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_FINISH)
         # Reset flags to prevent re-entering
         ctx.cultivate_detail.learn_skill_selected = False
@@ -822,25 +820,69 @@ def script_cultivate_learn_skill(ctx: UmamusumeContext):
         total_skill_point = 0
     else:
         total_skill_point = int(total_skill_point_text)
+    
+    log.debug(f"🔍 Total skill points available: {total_skill_point}")
+    log.debug(f"🔍 Skills detected: {len(skill_list)}")
+    log.debug(f"🔍 Priority breakdown: {[skill['priority'] for skill in skill_list]}")
+    
     target_skill_list = []
     target_skill_list_raw = []
     curr_point = 0
-    for i in range(len(learn_skill_list) + 1):
-        if (i > 0 and ctx.cultivate_detail.learn_skill_only_user_provided is True and
+    
+    # Fix: Properly iterate through priority levels and add skills
+    for priority_level in range(len(learn_skill_list) + 1):
+        log.debug(f"🔍 Processing priority level {priority_level}")
+        
+        # Skip user-provided only check for non-cultivate-finish scenarios
+        # But ONLY if there are no skills at this priority level in the user's preset
+        if (priority_level > 0 and ctx.cultivate_detail.learn_skill_only_user_provided is True and
                 not ctx.cultivate_detail.cultivate_finish):
-            break
-        for j in range(len(skill_list)):
-            if skill_list[j]["priority"] != i or skill_list[j]["available"] is False:
+            # Check if there are any skills at this priority level in the user's preset
+            # learn_skill_list is a list of lists where index = priority level
+            if priority_level < len(learn_skill_list) and len(learn_skill_list[priority_level]) > 0:
+                log.debug(f"🔍 Priority {priority_level} has {len(learn_skill_list[priority_level])} skills in preset - processing")
+            else:
+                log.debug(f"🔍 Skipping priority {priority_level} - no skills in preset at this priority")
                 continue
-            if curr_point + skill_list[j]["skill_cost"] <= total_skill_point:
-                curr_point += skill_list[j]["skill_cost"]
-                target_skill_list.append(skill_list[j]["skill_name"])
-                target_skill_list_raw.append(skill_list[j]["skill_name_raw"])
+            
+        # Find all skills at this priority level
+        priority_skills = [skill for skill in skill_list if skill["priority"] == priority_level and skill["available"] is True]
+        log.debug(f"🔍 Found {len(priority_skills)} skills at priority {priority_level}")
+        
+        for skill in priority_skills:
+            skill_cost = skill["skill_cost"]
+            skill_name = skill["skill_name"]
+            skill_name_raw = skill["skill_name_raw"]
+            
+            log.debug(f"🔍 Considering skill '{skill_name}' (cost: {skill_cost}, priority: {priority_level})")
+            
+            # Check if we can afford this skill
+            if curr_point + skill_cost <= total_skill_point:
+                curr_point += skill_cost
+                target_skill_list.append(skill_name)
+                target_skill_list_raw.append(skill_name_raw)
+                log.info(f"✅ Added skill '{skill_name}' to target list (cost: {skill_cost}, total spent: {curr_point})")
+                
                 # If clicking a gold skill, set its bound lower skill as unclickable
-                if skill_list[j]["gold"] is True and skill_list[j]["subsequent_skill"] != '':
+                if skill["gold"] is True and skill["subsequent_skill"] != '':
                     for k in range(len(skill_list)):
-                        if skill_list[k]["skill_name"] == skill_list[j]["subsequent_skill"]:
+                        if skill_list[k]["skill_name"] == skill["subsequent_skill"]:
                             skill_list[k]["available"] = False
+                            log.debug(f"🔒 Disabled subsequent skill '{skill['subsequent_skill']}' due to gold skill")
+            else:
+                log.debug(f"❌ Cannot afford skill '{skill_name}' (cost: {skill_cost}, available: {total_skill_point - curr_point})")
+                # Stop adding skills at this priority level if we can't afford them
+                break
+        
+        # If we couldn't afford any skills at this priority level, stop
+        if len([skill for skill in skill_list if skill["priority"] == priority_level and skill["available"] is True]) > 0:
+            if not any(skill["skill_name"] in target_skill_list for skill in skill_list if skill["priority"] == priority_level):
+                log.debug(f"🔍 Stopping at priority {priority_level} - no affordable skills")
+                break
+    
+    log.info(f"🎯 Final target skill list: {target_skill_list}")
+    log.info(f"🎯 Total skills to learn: {len(target_skill_list)}")
+    log.info(f"🎯 Total points to spend: {curr_point}")
 
     # If it's URA, mark learned skills, may be used to reset inspiration event weights
     # Since skill points were calculated above, can ensure all skills in list will be learned
@@ -875,6 +917,11 @@ def script_cultivate_learn_skill(ctx: UmamusumeContext):
         return
 
     # Click skills
+    log.info(f"🎯 Starting skill execution for {len(target_skill_list)} skills: {target_skill_list}")
+    
+    # Create a copy of the target list to avoid modifying the original
+    skills_to_process = target_skill_list.copy()
+    
     while True:
         # Safety check: If manual purchase was confirmed, immediately return
         if (ctx.task.detail.manual_purchase_at_end and 
@@ -887,11 +934,17 @@ def script_cultivate_learn_skill(ctx: UmamusumeContext):
             return
             
         img = ctx.ctrl.get_screen()
-        find_skill(ctx, img, target_skill_list, learn_any_skill=False)
-        if len(target_skill_list) == 0:
+        log.debug(f"🔍 Attempting to find and click skills. Target list: {skills_to_process}")
+        skills_found = find_skill(ctx, img, skills_to_process, learn_any_skill=False)
+        log.debug(f"🔍 find_skill result: {skills_found}")
+        
+        if len(skills_to_process) == 0:
+            log.info("🎯 All target skills have been processed")
             break
+            
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         if not compare_color_equal(img[488, 701], [211, 209, 219]):
+            log.debug("🔍 Reached end of skill list page")
             break
         ctx.ctrl.swipe(x1=23, y1=636, x2=23, y2=1000, duration=1000, name="")
         time.sleep(1)
@@ -909,8 +962,26 @@ def script_cultivate_learn_skill(ctx: UmamusumeContext):
         ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_FINISH)
         return
 
-    ctx.cultivate_detail.learn_skill_done = True
-    ctx.cultivate_detail.turn_info.turn_learn_skill_done = True
+    # Only mark as done if we actually processed skills or if there were no skills to process
+    if len(target_skill_list) > 0 or len(skill_list) == 0:
+        log.info(f"✅ Skill learning completed - processed {len(target_skill_list)} skills out of {len(skill_list)} available")
+        ctx.cultivate_detail.learn_skill_done = True
+        ctx.cultivate_detail.turn_info.turn_learn_skill_done = True
+    else:
+        # For user-provided only mode, if no skills were processed, it means all desired skills are already learned
+        if ctx.cultivate_detail.learn_skill_only_user_provided:
+            log.info(f"✅ User-provided only mode: No skills to learn - all desired skills already learned")
+            ctx.cultivate_detail.learn_skill_done = True
+            ctx.cultivate_detail.turn_info.turn_learn_skill_done = True
+        else:
+            # Check if all skills are already learned (priority -1 means already learned)
+            all_skills_already_learned = all(skill["priority"] == -1 for skill in skill_list)
+            if all_skills_already_learned:
+                log.info(f"✅ All desired skills are already learned - marking skill learning as complete")
+                ctx.cultivate_detail.learn_skill_done = True
+                ctx.cultivate_detail.turn_info.turn_learn_skill_done = True
+            else:
+                log.warning(f"⚠️ No skills were processed - learn_skill_done flag not set")
     
     # After learning skills, click the confirm button first, then back button
     log.info("✅ Skills learned - clicking confirm button first")

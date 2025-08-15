@@ -16,6 +16,8 @@ from bot.recog.image_matcher import template_match
 from config import CONFIG, Config
 from dataclasses import dataclass, field
 
+from adbutils import adb
+
 log = logger.get_logger(__name__)
 
 
@@ -61,7 +63,6 @@ class U2AndroidConfig:
 class U2AndroidController(AndroidController):
     config = U2AndroidConfig.load(CONFIG)
 
-    path = "deps\\adb\\"
     recent_point = None
     recent_operation_time = None
     same_point_operation_interval = 0.3
@@ -101,60 +102,60 @@ class U2AndroidController(AndroidController):
     def click(self, x, y, name="", random_offset=True, max_x=720, max_y=1280, hold_duration=0):
         if name != "":
             log.debug("click >> " + name)
-        if random_offset: # why was this just "random" before
+        if random_offset:  # why was this just "random" before
             offset_x = random.randint(-5, 5)
             offset_y = random.randint(-5, 5)
             x += offset_x
             y += offset_y
         if x >= max_x:
-            x = max_x-1
+            x = max_x - 1
         if y >= max_y:
-            y = max_y-1
+            y = max_y - 1
         if x < 0:
             x = 1
         if y <= 0:
             y = 1
-        
 
-        duration = random.randint(0, 166) + hold_duration #maybe im just paranoid but <100ms seemed like a number they would check
+        duration = random.randint(0, 166) + hold_duration  # maybe im just paranoid but <100ms seemed like a number they would check
 
-        _ = self.execute_adb_shell("shell input swipe " + str(x) + " " + str(y) + " " + str(x) + " " + str(y) + " " + str(duration), True)
+        _ = self.execute_adb_shell(["input", "swipe", str(x), str(y), str(x), str(y), str(duration)], True)
         time.sleep(self.config.delay)
 
     def swipe(self, x1=1025, y1=550, x2=1025, y2=550, duration=0.2, name=""):
         if name != "":
             log.debug("swipe >> " + name)
-        
+
         offset_x1 = random.randint(-5, 5)
         offset_y1 = random.randint(-5, 5)
         offset_x2 = random.randint(-5, 5)
         offset_y2 = random.randint(-5, 5)
-        
+
         x1 += offset_x1
         y1 += offset_y1
         x2 += offset_x2
         y2 += offset_y2
-        
-        _ = self.execute_adb_shell("shell input swipe " + str(x1) + " " + str(y1) + " " + str(x2) + " " + str(y2) + " " + str(duration), True)
+
+        _ = self.execute_adb_shell(["input", "swipe", str(x1), str(y1), str(x2), str(y2), str(duration)], True)
         time.sleep(self.config.delay)
 
     # ===== common =====
 
     # execute_adb_shell 执行adb命令
     def execute_adb_shell(self, cmd, sync):
-        cmd = os.run_cmd(self.path + "adb -s " + self.config.device_name + " " + cmd)
+        rsp = [None]
+        def target(cmd):
+            rsp[0] = self.u2client.shell(cmd)
         if sync:
-            cmd.communicate()
+            target(cmd)
         else:
-            threading.Thread(target=cmd.communicate, args=())
-        return cmd
+            threading.Thread(target=target, args=cmd)
+        return rsp[0]
 
     def start_app(self, package_name, activity_name=None):
         if activity_name:
             # Use direct ADB command to bypass uiautomator2 split APK issues
             component = f"{package_name}/{activity_name}"
-            cmd = f"shell am start -n {component}"
-            self.execute_adb_shell(cmd, True)
+            self.execute_adb_shell(["am", "start", "-n", component], True)
             log.debug("starting app using ADB: " + component)
         else:
             # Fallback to uiautomator2 method (may have split APK issues)
@@ -163,50 +164,48 @@ class U2AndroidController(AndroidController):
 
     # get_front_activity 获取前台正在运行的应用
     def get_front_activity(self):
-
-        rsp = self.execute_adb_shell("shell \"dumpsys window windows | grep \"Current\"\"", True).communicate()
+        rsp = self.execute_adb_shell("\"dumpsys window windows | grep \"Current\"\"", True)
         log.debug(str(rsp))
         return str(rsp)
 
     # get_devices 获取adb连接设备状态
     def get_devices(self):
-        p = os.run_cmd(self.path + "adb devices").communicate()
-        devices = p[0].decode()
-        log.debug(devices)
+        devices = adb.device_list()
+        log.debug([device.serial for device in devices])
         return devices
 
     # connect_to_device 连接至设备
     def connect_to_device(self):
-        p = os.run_cmd(self.path + "adb connect " + self.config.device_name).communicate()
-        log.debug(p[0].decode())
+        adb.connect(self.config.device_name)
+        log.debug(f"connected to {self.config.device_name}")
 
     # kill_adb_server 停止adb-server
     def kill_adb_server(self):
-        p = os.run_cmd(self.path + "adb kill-server").communicate()
-        log.debug(p[0].decode())
+        adb.server_kill()
+        log.debug(f"adb server killed")
 
     # check_file_exist 判断文件是否存在
     def check_file_exist(self, file_path, file_name):
-        rsp = self.execute_adb_shell("shell ls " + file_path, True).communicate()
-        file_list = rsp[0].decode()
+        rsp = self.execute_adb_shell(["ls", file_path], True)
+        file_list = rsp[0]
         log.debug(str("ls file result:" + file_list))
         return file_name in file_list
 
     # push_file 推送文件
     def push_file(self, src, dst):
-        self.execute_adb_shell("push " + src + " " + dst, True)
+        self.execute_adb_shell(["push", src, dst], True)
 
     # get_device_os_info 获取系统信息
     def get_device_os_info(self):
-        rsp = self.execute_adb_shell("shell getprop ro.build.version.sdk", True).communicate()
-        os_info = rsp[0].decode().replace('\r', '').replace('\n', '')
+        rsp = self.execute_adb_shell(["getprop", "ro.build.version.sdk"], True)
+        os_info = rsp[0].replace('\r', '').replace('\n', '')
         log.debug("device os info: " + os_info)
         return os_info
 
     # get_device_cpu_info 获取cpu信息
     def get_device_cpu_info(self):
-        rsp = self.execute_adb_shell("shell getprop ro.product.cpu.abi", True).communicate()
-        cpu_info = rsp[0].decode().replace('\r', '').replace('\n', '')
+        rsp = self.execute_adb_shell(["getprop", "ro.product.cpu.abi"], True)
+        cpu_info = rsp[0].replace('\r', '').replace('\n', '')
         log.debug("device cpu info: " + cpu_info)
         return cpu_info
 

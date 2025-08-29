@@ -31,7 +31,7 @@ def image_match(target, template: Template) -> ImageMatchResult:
         return ImageMatchResult()
 
 
-def template_match(target, template, accuracy: float = 0.9) -> ImageMatchResult:
+def template_match(target, template, accuracy: float = 0.95) -> ImageMatchResult:
     th, tw = template.shape[::]
     result = cv2.matchTemplate(target, template, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)

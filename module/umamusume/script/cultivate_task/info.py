@@ -79,7 +79,8 @@ TITLE = [
     # Aoharu Cup
     "Auto Formation", # TITLE[35]
     "Battle Confirmation", # TITLE[36]
-    "Rewards Collected" # TITLE[37] after career if theres story
+    "Rewards Collected", # TITLE[37] after career if theres story
+    "Event Story Unlocked" # TITLE[38] after career if theres story
 ]
 
 
@@ -533,7 +534,7 @@ def script_info(ctx: UmamusumeContext):
             # Limited time: Fuji Kiseki Show
             ctx.ctrl.click(360, 850, "Confirm unlock new difficulty")
 
-        if title_text == TITLE[37]: 
+        if title_text in (TITLE[37], TITLE[38]):
             ctx.ctrl.click_by_point(STORY_REWARDS_COLLECTED_CLOSE)
         time.sleep(1)
 

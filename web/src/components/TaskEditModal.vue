@@ -1831,7 +1831,7 @@ export default {
         this.selectedRaceTactic2 = this.presetsUse.race_tactic_2,
         this.selectedRaceTactic3 = this.presetsUse.race_tactic_3,
         this.skillLearnBlacklist = this.presetsUse.skill_blacklist
-
+     this.cureAsapConditions = this.presetsUse.cureAsapConditions
       // Load motivation thresholds (with defaults)
       this.motivationThresholdYear1 = parseInt(this.presetsUse.motivation_threshold_year1) || 3
       this.motivationThresholdYear2 = parseInt(this.presetsUse.motivation_threshold_year2) || 4
@@ -1989,6 +1989,7 @@ export default {
         race_list: this.extraRace,
         skill_priority_list: skill_priority_list,
         skill_blacklist: skill_blacklist,
+        cureAsapConditions: this.cureAsapConditions,
         expect_attribute: [this.expectSpeedValue, this.expectStaminaValue, this.expectPowerValue, this.expectWillValue, this.expectIntelligenceValue],
         follow_support_card: this.selectedSupportCard,
         follow_support_card_level: this.supportCardLevel,

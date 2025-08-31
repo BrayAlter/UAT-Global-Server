@@ -64,6 +64,7 @@ jobs:
         copy -Recurse resource dist/resource
         copy -Recurse public dist/public
         copy -Recurse deps dist/deps
+        copy -Recurse userdata/umamusume/starter_presets dist/userdata/umamusume/starter_presets
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4

@@ -51,6 +51,7 @@ class TurnOperationType(Enum):
     TURN_OPERATION_TYPE_MEDIC = 3
     TURN_OPERATION_TYPE_TRIP = 4
     TURN_OPERATION_TYPE_RACE = 5
+    TURN_OPERATION_TYPE_MEDIC_URGENT = 6
 
 
 class SupportCardUma(Enum):

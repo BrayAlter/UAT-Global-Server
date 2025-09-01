@@ -5,6 +5,7 @@ from module.umamusume.scenario.configs import *
 
 
 class TaskDetail:
+    cure_asap_conditions: str
     scenario: ScenarioType
     expect_attribute: list[int]
     follow_support_card_name: str
@@ -72,7 +73,7 @@ def build_task(task_execute_mode: TaskExecuteMode, task_type: int,
     td.allow_recover_tp = attachment_data['allow_recover_tp']
     td.extra_weight = attachment_data['extra_weight']
     td.manual_purchase_at_end = attachment_data['manual_purchase_at_end']
-    
+    td.cure_asap_conditions = attachment_data.get("cure_asap_conditions", "")
     # Load motivation thresholds (with defaults)
     td.motivation_threshold_year1 = attachment_data.get('motivation_threshold_year1', 3)
     td.motivation_threshold_year2 = attachment_data.get('motivation_threshold_year2', 4)

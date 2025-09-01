@@ -1769,6 +1769,7 @@ export default {
         task_desc: this.selectedUmamusumeTaskType.name,
         attachment_data: {
           "scenario": this.selectedScenario,
+          "cure_asap_conditions": this.cureAsapConditions,
           "expect_attribute": [this.expectSpeedValue, this.expectStaminaValue, this.expectPowerValue, this.expectWillValue, this.expectIntelligenceValue],
           "follow_support_card_name": this.selectedSupportCard.name,
           "follow_support_card_level": this.supportCardLevel,

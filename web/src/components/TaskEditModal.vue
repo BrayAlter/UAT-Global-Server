@@ -54,10 +54,11 @@
                 </div>
                 <div class="col">
                   <div class="form-group">
-                    <label for="selectAutoRecoverTP">Auto-recover when TP is low (TP Bottle)</label>
+                    <label for="selectAutoRecoverTP">Auto-recover when TP is low</label>
                     <select v-model="recoverTP" class="form-control" id="selectAutoRecoverTP">
-                      <option :value=true>Yes</option>
-                      <option :value=false>No</option>
+                      <option :value="0">Don't auto-recover</option>
+                      <option :value="1">When TP low, use TP (if available)</option>
+                      <option :value="2">When TP low, use TP or carrots</option>
                     </select>
                   </div>
                 </div>
@@ -1166,7 +1167,7 @@ export default {
       clockUseLimit: 99,
       learnSkillThreshold: 9999,
       cureAsapConditions: 'Migraine,Night Owl,Skin Outbreak,Slacker,Slow Metabolism,(Practice poor isn\'t worth a turn to cure)',
-      recoverTP: false,
+      recoverTP: 0,
       presetNameEdit: "",
       presetAction: null,
       overwritePresetName: "",

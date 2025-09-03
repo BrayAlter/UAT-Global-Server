@@ -62,12 +62,13 @@ class URAScenario(BaseScenario):
         skill_point_incr = 0 if skill_point_incr_text == "" else int(skill_point_incr_text)
 
         return [speed_icr, stamina_incr, power_incr, will_incr, intelligence_incr, skill_point_incr]
-    
+
     def parse_training_support_card(self, img: any) -> list[SupportCardInfo]:
         base_x = 590
         base_y = 190
         inc = 120
         support_card_list_info_result: list[SupportCardInfo] = []
+
         for i in range(5):
             support_card_icon = img[base_y:base_y + 110, base_x: base_x + 105]
             # Check favor level
@@ -94,6 +95,7 @@ class URAScenario(BaseScenario):
                     and 55 <= support_card_event_pos[1] <= 90
                     and 115 <= support_card_event_pos[2] <= 150):
                 support_card_event_available = True
+
             # Check support card type
             support_card_type = SupportCardType.SUPPORT_CARD_TYPE_UNKNOWN
             support_card_icon = cv2.cvtColor(support_card_icon, cv2.COLOR_RGB2GRAY)
@@ -109,11 +111,15 @@ class URAScenario(BaseScenario):
                 support_card_type = SupportCardType.SUPPORT_CARD_TYPE_INTELLIGENCE
             elif image_match(support_card_icon, REF_SUPPORT_CARD_TYPE_FRIEND).find_match:
                 support_card_type = SupportCardType.SUPPORT_CARD_TYPE_FRIEND
+
             if support_card_favor_process is not SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_UNKNOWN:
                 info = SupportCardInfo(card_type=support_card_type,
                                     favor=support_card_favor_process,
                                     has_event=support_card_event_available)
+
+                info.center = (base_x + 105 // 2, base_y + 110 // 2)
                 support_card_list_info_result.append(info)
+
             base_y += inc
 
         return support_card_list_info_result

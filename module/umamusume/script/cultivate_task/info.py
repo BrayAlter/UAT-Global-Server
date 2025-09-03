@@ -330,6 +330,7 @@ def script_info(ctx: UmamusumeContext):
                 # Get current screen and search for suitable race template
                 img = ctx.ctrl.get_screen(to_gray=True)
                 from module.umamusume.asset import REF_SUITABLE_RACE
+                
                 suitable_race_match = image_match(img, REF_SUITABLE_RACE)
                 
                 if suitable_race_match.find_match:

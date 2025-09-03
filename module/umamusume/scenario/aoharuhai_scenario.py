@@ -104,12 +104,13 @@ class AoharuHaiScenario(BaseScenario):
         base_y = 177
         inc = 115
         support_card_list_info_result: list[SupportCardInfo] = []
+
         for i in range(5):
             support_card_icon = img[base_y:base_y + inc, base_x: base_x + 145]
-            
+
             # Has Youth Cup training, and Youth Cup friendship not full
             can_incr_aoharu_train = detect_aoharu_train_arrow(support_card_icon) and aoharu_train_not_full(support_card_icon)
-            
+
             # Check favor level
             support_card_icon = cv2.cvtColor(support_card_icon, cv2.COLOR_BGR2RGB)
             favor_process_check_list = [support_card_icon[106, 56], support_card_icon[106, 60]]
@@ -142,12 +143,15 @@ class AoharuHaiScenario(BaseScenario):
                 support_card_type = SupportCardType.SUPPORT_CARD_TYPE_INTELLIGENCE
             elif image_match(support_card_icon, REF_SUPPORT_CARD_TYPE_FRIEND).find_match:
                 support_card_type = SupportCardType.SUPPORT_CARD_TYPE_FRIEND
+
             if (can_incr_aoharu_train) or \
                (support_card_favor_process is not SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_UNKNOWN):
                 info = SupportCardInfo(card_type=support_card_type,
                                        favor=support_card_favor_process,
                                        can_incr_aoharu_train=can_incr_aoharu_train)
+                info.center = (base_x + 145 // 2, base_y + inc // 2)
                 support_card_list_info_result.append(info)
+
             base_y += inc
 
         return support_card_list_info_result

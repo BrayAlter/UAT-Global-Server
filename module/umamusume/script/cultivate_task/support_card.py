@@ -4,8 +4,10 @@ from module.umamusume.define import TrainingType, SupportCardType, SupportCardFa
 
 DEFAULT = 0
 
-
+import bot.base.log as logger
+log = logger.get_logger(__name__)
 def get_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo):
+    # log.info(f"SupportCard type: {info.card_type}")
     if info.name in SCORE_DICT[info.card_type]:
         score = SCORE_DICT[info.card_type][info.name](ctx, info)
     else:

@@ -337,8 +337,56 @@ def parse_train_main_menu_operations_availability(ctx: UmamusumeContext, img):
 
 def parse_training_support_card(ctx: UmamusumeContext, img, train_type: TrainingType):
     support_card_info_list = ctx.cultivate_detail.scenario.parse_training_support_card(img)
-    ctx.cultivate_detail.turn_info.training_info_list[train_type.value - 1].support_card_info_list = support_card_info_list
+    date_id = getattr(ctx.cultivate_detail.turn_info, "date", None)
+    year_text = "Unknown"
+    if isinstance(date_id, int):
+        if 1 <= date_id <= 72:
+            yidx = (date_id - 1) // 24
+            year_text = DATE_YEAR[yidx] if 0 <= yidx < len(DATE_YEAR) else f"Year {yidx + 1}"
+        else:
+            year_text = DATE_YEAR[3] if len(DATE_YEAR) > 3 else "Finale"
+    log.info(f'Year: {year_text}')
+    
+    from module.umamusume.define import SupportCardType
+    tt_map = {
+        TrainingType.TRAINING_TYPE_SPEED: SupportCardType.SUPPORT_CARD_TYPE_SPEED,
+        TrainingType.TRAINING_TYPE_STAMINA: SupportCardType.SUPPORT_CARD_TYPE_STAMINA,
+        TrainingType.TRAINING_TYPE_POWER: SupportCardType.SUPPORT_CARD_TYPE_POWER,
+        TrainingType.TRAINING_TYPE_WILL: SupportCardType.SUPPORT_CARD_TYPE_WILL,
+        TrainingType.TRAINING_TYPE_INTELLIGENCE: SupportCardType.SUPPORT_CARD_TYPE_INTELLIGENCE,
+    }
+    target = tt_map.get(train_type)
 
+    h, w = img.shape[:2]
+    tol = 12
+    def match_rgb(bgr, r, g, b):
+        return abs(int(bgr[2]) - r) <= tol and abs(int(bgr[1]) - g) <= tol and abs(int(bgr[0]) - b) <= tol
+
+    facility = getattr(train_type, "name", str(train_type)).replace("TRAINING_TYPE_", "").title()
+    rainbow_count = 0
+    rgb_list = []
+    weighted_list: list[SupportCardInfo] = []
+
+    for sc in support_card_info_list:
+        weighted_list.append(sc)
+        if getattr(sc, "card_type", None) != target:
+            continue
+        c = getattr(sc, "center", None)
+        if not (isinstance(c, (tuple, list)) and len(c) >= 2):
+            continue
+        cx, cy = int(c[0]), int(c[1]) + 75
+        if cx < 0 or cy < 0 or cx >= w or cy >= h:
+            continue
+        p = img[cy, cx]
+        r, g, b = int(p[2]), int(p[1]), int(p[0])
+        if match_rgb(p, 255, 235, 120) or match_rgb(p, 255, 173, 30):
+            rainbow_count += 1
+            rgb_list.append(f"({r},{g},{b})")
+            weighted_list.append(sc)
+
+    ctx.cultivate_detail.turn_info.training_info_list[train_type.value - 1].support_card_info_list = weighted_list
+    log.info(f'Rainbow training in "{facility}": {rainbow_count}')
+        
 def parse_train_type(ctx: UmamusumeContext, img) -> TrainingType:
     train_label = cv2.cvtColor(img[210:275, 0:210], cv2.COLOR_RGB2GRAY)
     train_type = TrainingType.TRAINING_TYPE_UNKNOWN
@@ -525,6 +573,7 @@ def convert_race_name_to_ingame_format(race_id: int) -> str:
 
 
 def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
+    start_time = time.time()
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     target_race_template = RACE_LIST[race_id][2]
     img_height, img_width = img.shape
@@ -538,6 +587,9 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
         return False
     
     while True:
+        if time.time() - start_time > 30:
+            log.info("Race Timeout")
+            return False
         match_result = image_match(img, REF_RACE_LIST_DETECT_LABEL)
         if match_result.find_match:
             pos = match_result.matched_area
@@ -548,26 +600,21 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                 y2 = min(img_height, pos[1][1] + 25)
                 x1 = max(0, pos[0][0] - 250)
                 x2 = min(img_width, pos[1][0] + 400)
-                
                 # Extract race name region with bounds checking
                 race_name_img = img[y1:y2, x1:x2]
-                
                 # Check if extracted region is large enough for template matching
                 if target_race_template is not None and race_name_img.shape[0] > 0 and race_name_img.shape[1] > 0:
                     template_img = target_race_template.template_image
                     if (template_img is not None and 
                         race_name_img.shape[0] >= template_img.shape[0] and 
                         race_name_img.shape[1] >= template_img.shape[1]):
-                        
                         # STEP 1: Try template matching first
                         template_match = image_match(race_name_img, target_race_template)
                         template_success = template_match.find_match
-                        
                         if template_success:
                             log.info(f"✅ Template match successful for race {race_id}")
                         else:
                             log.debug(f"❌ Template match failed for race {race_id}")
-                            
                             # Try with preprocessed template (wiki image optimization)
                             try:
                                 preprocessed_template = preprocess_wiki_image_for_ingame_matching(template_img.copy())
@@ -575,7 +622,6 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                                 from bot.base.resource import Template
                                 temp_template = Template(f"preprocessed_{race_id}", UMAMUSUME_RACE_TEMPLATE_PATH)
                                 temp_template.template_image = preprocessed_template
-                                
                                 # Try without threshold parameter first
                                 preprocessed_match = image_match(race_name_img, temp_template)
                                 if preprocessed_match.find_match:
@@ -585,34 +631,27 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                                     log.debug(f"❌ Preprocessed template match also failed for race {race_id}")
                             except Exception as e:
                                 log.debug(f"Preprocessed template matching failed: {e}")
-                        
                         # STEP 2: Try OCR to get the actual race name from screen
                         ocr_race_id = None
                         try:
                             race_name_text = ocr_line(race_name_img)
                             log.info(f"🔍 OCR extracted text: '{race_name_text}'")
-                            
                             # Try to find which race ID this OCR text corresponds to
                             # Search through all races to find a match
                             for search_race_id in range(len(RACE_LIST)):
-                                if search_race_id == race_id:  # Skip our target race
+                                if search_race_id == race_id: # Skip our target race
                                     continue
-                                    
                                 target_race_name = RACE_LIST[search_race_id][1]
                                 in_game_race_name = convert_race_name_to_ingame_format(search_race_id)
-                                
                                 # Check if OCR text matches this race
                                 csv_match = target_race_name.lower() in race_name_text.lower() or race_name_text.lower() in target_race_name.lower()
                                 ingame_match = in_game_race_name.lower() in race_name_text.lower() or race_name_text.lower() in in_game_race_name.lower()
-                                
                                 if csv_match or ingame_match:
                                     ocr_race_id = search_race_id
                                     log.info(f"🔍 OCR identified race ID: {ocr_race_id} ({RACE_LIST[ocr_race_id][1]})")
                                     break
-                                    
                         except Exception as e:
                             log.debug(f"OCR failed: {e}")
-                        
                         # STEP 3: DUAL VERIFICATION - Both template and OCR must agree
                         if template_success and ocr_race_id is not None:
                             if ocr_race_id == race_id:

@@ -524,6 +524,7 @@ def script_cultivate_race_list(ctx: UmamusumeContext):
                         time.sleep(1.5)
                     break
                 ctx.ctrl.swipe(x1=20, y1=850, x2=20, y2=1000, duration=200, name="")
+                log.info("testing")
                 swiped = True
             img = ctx.ctrl.get_screen()
             while True:

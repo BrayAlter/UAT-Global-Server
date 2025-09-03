@@ -573,7 +573,6 @@ def convert_race_name_to_ingame_format(race_id: int) -> str:
 
 
 def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
-    start_time = time.time()
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     target_race_template = RACE_LIST[race_id][2]
     img_height, img_width = img.shape
@@ -587,9 +586,6 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
         return False
     
     while True:
-        if time.time() - start_time > 30:
-            log.info("Race Timeout")
-            return False
         match_result = image_match(img, REF_RACE_LIST_DETECT_LABEL)
         if match_result.find_match:
             pos = match_result.matched_area
@@ -600,21 +596,26 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                 y2 = min(img_height, pos[1][1] + 25)
                 x1 = max(0, pos[0][0] - 250)
                 x2 = min(img_width, pos[1][0] + 400)
+                
                 # Extract race name region with bounds checking
                 race_name_img = img[y1:y2, x1:x2]
+                
                 # Check if extracted region is large enough for template matching
                 if target_race_template is not None and race_name_img.shape[0] > 0 and race_name_img.shape[1] > 0:
                     template_img = target_race_template.template_image
                     if (template_img is not None and 
                         race_name_img.shape[0] >= template_img.shape[0] and 
                         race_name_img.shape[1] >= template_img.shape[1]):
+                        
                         # STEP 1: Try template matching first
                         template_match = image_match(race_name_img, target_race_template)
                         template_success = template_match.find_match
+                        
                         if template_success:
                             log.info(f"✅ Template match successful for race {race_id}")
                         else:
                             log.debug(f"❌ Template match failed for race {race_id}")
+                            
                             # Try with preprocessed template (wiki image optimization)
                             try:
                                 preprocessed_template = preprocess_wiki_image_for_ingame_matching(template_img.copy())
@@ -622,6 +623,7 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                                 from bot.base.resource import Template
                                 temp_template = Template(f"preprocessed_{race_id}", UMAMUSUME_RACE_TEMPLATE_PATH)
                                 temp_template.template_image = preprocessed_template
+                                
                                 # Try without threshold parameter first
                                 preprocessed_match = image_match(race_name_img, temp_template)
                                 if preprocessed_match.find_match:
@@ -631,27 +633,34 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                                     log.debug(f"❌ Preprocessed template match also failed for race {race_id}")
                             except Exception as e:
                                 log.debug(f"Preprocessed template matching failed: {e}")
+                        
                         # STEP 2: Try OCR to get the actual race name from screen
                         ocr_race_id = None
                         try:
                             race_name_text = ocr_line(race_name_img)
                             log.info(f"🔍 OCR extracted text: '{race_name_text}'")
+                            
                             # Try to find which race ID this OCR text corresponds to
                             # Search through all races to find a match
                             for search_race_id in range(len(RACE_LIST)):
-                                if search_race_id == race_id: # Skip our target race
+                                if search_race_id == race_id:  # Skip our target race
                                     continue
+                                    
                                 target_race_name = RACE_LIST[search_race_id][1]
                                 in_game_race_name = convert_race_name_to_ingame_format(search_race_id)
+                                
                                 # Check if OCR text matches this race
                                 csv_match = target_race_name.lower() in race_name_text.lower() or race_name_text.lower() in target_race_name.lower()
                                 ingame_match = in_game_race_name.lower() in race_name_text.lower() or race_name_text.lower() in in_game_race_name.lower()
+                                
                                 if csv_match or ingame_match:
                                     ocr_race_id = search_race_id
                                     log.info(f"🔍 OCR identified race ID: {ocr_race_id} ({RACE_LIST[ocr_race_id][1]})")
                                     break
+                                    
                         except Exception as e:
                             log.debug(f"OCR failed: {e}")
+                        
                         # STEP 3: DUAL VERIFICATION - Both template and OCR must agree
                         if template_success and ocr_race_id is not None:
                             if ocr_race_id == race_id:
@@ -688,6 +697,9 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
         else:
             break
     return False
+
+
+
 
 
 def find_skill(ctx: UmamusumeContext, img, skill: list[str], learn_any_skill: bool) -> bool:

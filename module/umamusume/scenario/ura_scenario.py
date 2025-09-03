@@ -78,7 +78,7 @@ class URAScenario(BaseScenario):
             for support_card_favor_process_pos in favor_process_check_list:
                 if compare_color_equal(support_card_favor_process_pos, [255, 235, 120]):
                     support_card_favor_process = SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4
-                    log.info(f"does this even work")
+                    log.info(f"does this even work") #no it doesn't
                 elif compare_color_equal(support_card_favor_process_pos, [255, 173, 30]):
                     support_card_favor_process = SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3
                 elif compare_color_equal(support_card_favor_process_pos, [162, 230, 30]):

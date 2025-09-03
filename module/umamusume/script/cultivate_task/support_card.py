@@ -85,7 +85,7 @@ def default_unknown_support_card_score(ctx: UmamusumeContext, info: SupportCardI
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
         return 0.1
-    return 0.5
+    return 0.1 # this usually means no support 99% of the  time
 
 
 SCORE_DICT: dict = {

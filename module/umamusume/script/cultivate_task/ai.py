@@ -75,40 +75,40 @@ def get_operation(ctx: UmamusumeContext) -> TurnOperation | None:
 
     # Year 1 to before Year 2 training camp
     if ctx.cultivate_detail.turn_info.date <= 36:
-        attr_weight = 0.2
-        support_card_weight = 0.6
-        training_level_weight = 0.2
+        attr_weight = 0
+        support_card_weight = 1
+        training_level_weight = 0
     # During Year 2 training camp
     elif 36 < ctx.cultivate_detail.turn_info.date <= 40:
-        attr_weight = 0.8
-        support_card_weight = 0.2
+        attr_weight = 0
+        support_card_weight = 1
         training_level_weight = 0
     # After Year 2 training camp to before Year 3
     elif 40 < ctx.cultivate_detail.turn_info.date <= 48:
-        attr_weight = 0.6
-        support_card_weight = 0.2
-        training_level_weight = 0.2
+        attr_weight = 0
+        support_card_weight = 1
+        training_level_weight = 0
     # Before Year 3 training camp
     elif 48 < ctx.cultivate_detail.turn_info.date <= 60:
-        attr_weight = 0.6
-        support_card_weight = 0.1
-        training_level_weight = 0.3
+        attr_weight = 0
+        support_card_weight = 1
+        training_level_weight = 0
     # During Year 3 training camp
     elif 60 < ctx.cultivate_detail.turn_info.date <= 64:
-        attr_weight = 1
-        support_card_weight = 0
+        attr_weight = 0
+        support_card_weight = 1
         training_level_weight = 0
     # Year 3 to end
     elif 64 < ctx.cultivate_detail.turn_info.date <= 99:
-        attr_weight = 0.8
-        support_card_weight = 0
-        training_level_weight = 0.2
+        attr_weight = 0
+        support_card_weight = 1
+        training_level_weight = 0
     else:
-        attr_weight = 1
-        support_card_weight = 0
+        attr_weight = 0
+        support_card_weight = 1
         training_level_weight = 0
 
-    # Training score
+    # attribute growth is very faulty as ocr kinda suck and training level weight is always 0 so only support card weight can be relied on
     training_score = []
     for i in range(5):
         training_score.append(normalized_attribute_result[i] * attr_weight + normalized_support_card_result[i] *

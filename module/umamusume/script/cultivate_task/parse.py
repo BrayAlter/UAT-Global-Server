@@ -399,6 +399,7 @@ def parse_training_support_card(ctx: UmamusumeContext, img, train_type: Training
     log.info(f'Rainbow training in "{facility}": {rainbow_count}')
     if not_senior:
         log.info(f'Irrelevant maxed training cards in "{facility}": {irrelevant_maxed_count}')
+    log.info(year_text)
         
 def parse_train_type(ctx: UmamusumeContext, img) -> TrainingType:
     train_label = cv2.cvtColor(img[210:275, 0:210], cv2.COLOR_RGB2GRAY)

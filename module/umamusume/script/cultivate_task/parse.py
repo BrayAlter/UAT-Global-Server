@@ -337,8 +337,69 @@ def parse_train_main_menu_operations_availability(ctx: UmamusumeContext, img):
 
 def parse_training_support_card(ctx: UmamusumeContext, img, train_type: TrainingType):
     support_card_info_list = ctx.cultivate_detail.scenario.parse_training_support_card(img)
-    ctx.cultivate_detail.turn_info.training_info_list[train_type.value - 1].support_card_info_list = support_card_info_list
+    date_id = getattr(ctx.cultivate_detail.turn_info, "date", None)
+    year_text = "Unknown"
+    if isinstance(date_id, int):
+        if 1 <= date_id <= 72:
+            yidx = (date_id - 1) // 24
+            year_text = DATE_YEAR[yidx] if 0 <= yidx < len(DATE_YEAR) else f"Year {yidx + 1}"
+        else:
+            year_text = DATE_YEAR[3] if len(DATE_YEAR) > 3 else "Finale"
+    log.info(f'Year: {year_text}')
+    
+    from module.umamusume.define import SupportCardType
+    tt_map = {
+        TrainingType.TRAINING_TYPE_SPEED: SupportCardType.SUPPORT_CARD_TYPE_SPEED,
+        TrainingType.TRAINING_TYPE_STAMINA: SupportCardType.SUPPORT_CARD_TYPE_STAMINA,
+        TrainingType.TRAINING_TYPE_POWER: SupportCardType.SUPPORT_CARD_TYPE_POWER,
+        TrainingType.TRAINING_TYPE_WILL: SupportCardType.SUPPORT_CARD_TYPE_WILL,
+        TrainingType.TRAINING_TYPE_INTELLIGENCE: SupportCardType.SUPPORT_CARD_TYPE_INTELLIGENCE,
+    }
+    target = tt_map.get(train_type)
 
+    h, w = img.shape[:2]
+    tol = 12
+    def match_rgb(bgr, r, g, b):
+        return abs(int(bgr[2]) - r) <= tol and abs(int(bgr[1]) - g) <= tol and abs(int(bgr[0]) - b) <= tol
+
+    facility = getattr(train_type, "name", str(train_type)).replace("TRAINING_TYPE_", "").title()
+    rainbow_count = 0
+    rgb_list = []
+    irrelevant_maxed_count = 0
+    weighted_list: list[SupportCardInfo] = []
+
+    not_senior = (year_text != "Senior")
+
+    for sc in support_card_info_list:
+        weighted_list.append(sc)
+
+        sc_type = getattr(sc, "card_type", None)
+        c = getattr(sc, "center", None)
+        is_maxed = False
+
+        if isinstance(c, (tuple, list)) and len(c) >= 2:
+            cx, cy = int(c[0]), int(c[1]) + 75
+            if 0 <= cx < w and 0 <= cy < h:
+                p = img[cy, cx]
+                r, g, b = int(p[2]), int(p[1]), int(p[0])
+                if match_rgb(p, 255, 235, 120) or match_rgb(p, 255, 173, 30):
+                    is_maxed = True
+
+        if sc_type != target:
+            if not_senior and is_maxed:
+                irrelevant_maxed_count += 1
+                weighted_list.pop()
+            continue
+        if is_maxed:
+            rainbow_count += 1
+            rgb_list.append(f"({r},{g},{b})")
+            weighted_list.append(sc)
+
+    ctx.cultivate_detail.turn_info.training_info_list[train_type.value - 1].support_card_info_list = weighted_list
+    log.info(f'Rainbow training in "{facility}": {rainbow_count}')
+    if not_senior:
+        log.info(f'Irrelevant maxed training cards in "{facility}": {irrelevant_maxed_count}')
+        
 def parse_train_type(ctx: UmamusumeContext, img) -> TrainingType:
     train_label = cv2.cvtColor(img[210:275, 0:210], cv2.COLOR_RGB2GRAY)
     train_type = TrainingType.TRAINING_TYPE_UNKNOWN
@@ -649,6 +710,9 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
         else:
             break
     return False
+
+
+
 
 
 def find_skill(ctx: UmamusumeContext, img, skill: list[str], learn_any_skill: bool) -> bool:

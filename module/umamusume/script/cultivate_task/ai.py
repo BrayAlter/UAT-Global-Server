@@ -23,17 +23,20 @@ def get_operation(ctx: UmamusumeContext) -> TurnOperation | None:
     turn_operation = TurnOperation()
     if not ctx.cultivate_detail.debut_race_win:
         turn_operation.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_RACE
-
+    # this is stupid change later
+    if ctx.cultivate_detail.turn_info.medic_room_available and ctx.cultivate_detail.turn_info.remain_stamina <= 80:
+        log.info(f"🏥 Fast path: Low stamina ({ctx.cultivate_detail.turn_info.remain_stamina}) - prioritizing medic")
+        turn_operation.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_MEDIC
+        return turn_operation
+    
+    
     # Fast path: If we have a clear decision based on stamina/motivation, skip complex calculations
     if ctx.cultivate_detail.turn_info.remain_stamina <= 48:
         log.info(f"🏥 Fast path: Low stamina ({ctx.cultivate_detail.turn_info.remain_stamina}) - prioritizing rest")
         turn_operation.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_REST
         return turn_operation
     
-    if ctx.cultivate_detail.turn_info.medic_room_available and ctx.cultivate_detail.turn_info.remain_stamina <= 65:
-        log.info(f"🏥 Fast path: Low stamina ({ctx.cultivate_detail.turn_info.remain_stamina}) - prioritizing medic")
-        turn_operation.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_MEDIC
-        return turn_operation
+
 
     # Cache screen image to avoid multiple conversions
     cached_screen = None
@@ -165,7 +168,7 @@ def get_operation(ctx: UmamusumeContext) -> TurnOperation | None:
             log.info(f"🏆 Detected URA championship race: {ura_race_id} at date {date}")
             # Check if we should rest/recreate instead of racing
             medic = False
-            if ctx.cultivate_detail.turn_info.medic_room_available and ctx.cultivate_detail.turn_info.remain_stamina <= 65:
+            if ctx.cultivate_detail.turn_info.medic_room_available and ctx.cultivate_detail.turn_info.remain_stamina <= 85:
                 medic = True
 
             trip = False
@@ -212,7 +215,7 @@ def get_operation(ctx: UmamusumeContext) -> TurnOperation | None:
             return turn_operation
 
     medic = False
-    if ctx.cultivate_detail.turn_info.medic_room_available and ctx.cultivate_detail.turn_info.remain_stamina <= 65:
+    if ctx.cultivate_detail.turn_info.medic_room_available and ctx.cultivate_detail.turn_info.remain_stamina <= 85:
         medic = True
 
     trip = False

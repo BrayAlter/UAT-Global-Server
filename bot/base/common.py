@@ -27,7 +27,7 @@ class ImageMatchConfig:
 
     def __init__(self, match_area: Area = Area(0, 0, 720, 1280),
                  match_mode: ImageMatchMode = ImageMatchMode.IMAGE_MATCH_MODE_TEMPLATE_MATCH,
-                 match_accuracy: float = 0.9):
+                 match_accuracy: float = 0.85):  # anything higher and it will fail to detect training partners very often
         self.match_area = match_area
         self.match_mode = match_mode
         self.match_accuracy = match_accuracy

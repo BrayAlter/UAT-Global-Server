@@ -104,12 +104,13 @@ class AoharuHaiScenario(BaseScenario):
         base_y = 177
         inc = 115
         support_card_list_info_result: list[SupportCardInfo] = []
+
         for i in range(5):
             support_card_icon = img[base_y:base_y + inc, base_x: base_x + 145]
-            
+
             # Has Youth Cup training, and Youth Cup friendship not full
             can_incr_aoharu_train = detect_aoharu_train_arrow(support_card_icon) and aoharu_train_not_full(support_card_icon)
-            
+
             # Check favor level
             support_card_icon = cv2.cvtColor(support_card_icon, cv2.COLOR_BGR2RGB)
             favor_process_check_list = [support_card_icon[106, 56], support_card_icon[106, 60]]
@@ -122,7 +123,7 @@ class AoharuHaiScenario(BaseScenario):
                 elif compare_color_equal(support_card_favor_process_pos, [162, 230, 30]):
                     support_card_favor_process = SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_2
                 elif (compare_color_equal(support_card_favor_process_pos, [42, 192, 255]) or
-                    compare_color_equal(support_card_favor_process_pos, [109, 108, 117])):
+                      compare_color_equal(support_card_favor_process_pos, [109, 108, 117])):
                     support_card_favor_process = SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_1
                 if support_card_favor_process != SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_UNKNOWN:
                     break
@@ -130,24 +131,46 @@ class AoharuHaiScenario(BaseScenario):
             # Check support card type
             support_card_type = SupportCardType.SUPPORT_CARD_TYPE_UNKNOWN
             support_card_icon = cv2.cvtColor(support_card_icon, cv2.COLOR_RGB2GRAY)
-            if image_match(support_card_icon, REF_SUPPORT_CARD_TYPE_SPEED).find_match:
-                support_card_type = SupportCardType.SUPPORT_CARD_TYPE_SPEED
-            elif image_match(support_card_icon, REF_SUPPORT_CARD_TYPE_STAMINA).find_match:
-                support_card_type = SupportCardType.SUPPORT_CARD_TYPE_STAMINA
-            elif image_match(support_card_icon, REF_SUPPORT_CARD_TYPE_POWER).find_match:
-                support_card_type = SupportCardType.SUPPORT_CARD_TYPE_POWER
-            elif image_match(support_card_icon, REF_SUPPORT_CARD_TYPE_WILL).find_match:
-                support_card_type = SupportCardType.SUPPORT_CARD_TYPE_WILL
-            elif image_match(support_card_icon, REF_SUPPORT_CARD_TYPE_INTELLIGENCE).find_match:
-                support_card_type = SupportCardType.SUPPORT_CARD_TYPE_INTELLIGENCE
-            elif image_match(support_card_icon, REF_SUPPORT_CARD_TYPE_FRIEND).find_match:
-                support_card_type = SupportCardType.SUPPORT_CARD_TYPE_FRIEND
-            if (can_incr_aoharu_train) or \
-               (support_card_favor_process is not SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_UNKNOWN):
-                info = SupportCardInfo(card_type=support_card_type,
-                                       favor=support_card_favor_process,
-                                       can_incr_aoharu_train=can_incr_aoharu_train)
+            match_center = None
+            for ref, t in (
+                (REF_SUPPORT_CARD_TYPE_SPEED,SupportCardType.SUPPORT_CARD_TYPE_SPEED),
+                (REF_SUPPORT_CARD_TYPE_STAMINA,SupportCardType.SUPPORT_CARD_TYPE_STAMINA),
+                (REF_SUPPORT_CARD_TYPE_POWER,SupportCardType.SUPPORT_CARD_TYPE_POWER),
+                (REF_SUPPORT_CARD_TYPE_WILL,SupportCardType.SUPPORT_CARD_TYPE_WILL),
+                (REF_SUPPORT_CARD_TYPE_INTELLIGENCE,SupportCardType.SUPPORT_CARD_TYPE_INTELLIGENCE),
+                (REF_SUPPORT_CARD_TYPE_FRIEND,SupportCardType.SUPPORT_CARD_TYPE_FRIEND),
+            ):
+                r = image_match(support_card_icon, ref)
+                if r.find_match:
+                    support_card_type = t
+                    match_center = r.center_point  # ROI coords
+                    break
+
+            h_local, w_local = support_card_icon.shape[:2]
+            cx = base_x + (w_local // 2)
+            cy = base_y + (h_local // 2)
+            if isinstance(match_center, (tuple, list)) and len(match_center) >= 2:
+                cx = base_x + int(match_center[0])
+                cy = base_y + int(match_center[1])
+
+            if (can_incr_aoharu_train) or (support_card_favor_process is not SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_UNKNOWN):
+                name_map = {
+                    SupportCardType.SUPPORT_CARD_TYPE_SPEED: "support_card_type_speed",
+                    SupportCardType.SUPPORT_CARD_TYPE_STAMINA: "support_card_type_stamina",
+                    SupportCardType.SUPPORT_CARD_TYPE_POWER: "support_card_type_power",
+                    SupportCardType.SUPPORT_CARD_TYPE_WILL: "support_card_type_will",
+                    SupportCardType.SUPPORT_CARD_TYPE_INTELLIGENCE: "support_card_type_intelligence",
+                    SupportCardType.SUPPORT_CARD_TYPE_FRIEND: "support_card_type_friend",
+                }
+                info = SupportCardInfo(
+                    name=name_map.get(support_card_type, "support_card"),
+                    card_type=support_card_type,
+                    favor=support_card_favor_process,
+                    can_incr_aoharu_train=can_incr_aoharu_train
+                )
+                info.center = (cx, cy)
                 support_card_list_info_result.append(info)
+
             base_y += inc
 
         return support_card_list_info_result

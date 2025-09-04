@@ -19,16 +19,18 @@ class SupportCardInfo:
     can_incr_aoharu_train: bool
 
     def __init__(self,
-                 name: str = "support_card",
-                 card_type: SupportCardType = SupportCardType.SUPPORT_CARD_TYPE_UNKNOWN,
-                 favor: SupportCardFavorLevel = SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_UNKNOWN,
-                 has_event: bool = False,
-                 can_incr_aoharu_train: bool = False):
+                name: str = "support_card",
+                card_type: SupportCardType = SupportCardType.SUPPORT_CARD_TYPE_UNKNOWN,
+                favor: SupportCardFavorLevel = SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_UNKNOWN,
+                has_event: bool = False,
+                can_incr_aoharu_train: bool = False,
+                center: tuple[int, int] | None = None):
         self.name = name
         self.card_type = card_type
         self.favor = favor
         self.has_event = has_event
         self.can_incr_aoharu_train = can_incr_aoharu_train
+        self.center = center
 
 
 class TrainingInfo:

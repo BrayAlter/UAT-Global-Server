@@ -6,6 +6,7 @@ import time
 import json
 import os
 
+from bot.conn.fetch import *
 
 # For HTML parsing
 try:
@@ -65,7 +66,7 @@ def load_events_database():
         log.error(f"❌ Error loading events database: {e}")
         return {}
 
-def get_local_event_choice(event_name: str) -> Union[int, None]:
+def get_local_event_choice(ctx: UmamusumeContext, event_name: str) -> Union[int, None]:
     """Get optimal choice from local database - if not found, it's auto-skipped"""
     events_db = load_events_database()
     
@@ -75,7 +76,7 @@ def get_local_event_choice(event_name: str) -> Union[int, None]:
     # Try exact match only
     if event_name in events_db:
         log.info(f"✅ Found event '{event_name}' in local database")
-        return calculate_optimal_choice_from_db(events_db[event_name])
+        return calculate_optimal_choice_from_db(ctx, events_db[event_name])
     
     # If not found, it's likely an auto-skipped event
     log.info(f"🔄 Event '{event_name}' not in database - likely auto-skipped, using random choice")
@@ -83,57 +84,74 @@ def get_local_event_choice(event_name: str) -> Union[int, None]:
 
 
 
-def calculate_optimal_choice_from_db(event_data: dict) -> int:
+def calculate_optimal_choice_from_db(ctx: UmamusumeContext, event_data: dict) -> int:
     """Calculate optimal choice from database event data"""
     choices = event_data['choices']
     stats = event_data['stats']
-    
     if not choices:
         return 1
-    
-    # Calculate optimal choice based on stat values
+
+    state = fetch_state()
+    energy = state["energy"]
+    year_text = state["year"] if state["year"] else "Unknown"
+    mood_val = state["mood"]
+    mood_text = f"Level {mood_val}" if mood_val is not None else "Unknown"
+    log.info(f"HP: {energy}, Year: {year_text}, Mood: {mood_text}")
+
+    weights = {
+        'Power': 10,
+        'Speed': 10,
+        'Guts': 20,
+        'Stamina': 10,
+        'Wisdom': 1,
+        'Friendship': 15,
+        'Mood': 9999,
+        'Max Energy': 50,
+        'HP': 16,
+        'Skill': 10,
+        'Skill Hint': 100,
+        'Skill Pts': 10
+    }
+
+    if year_text == "Junior":
+        weights['Friendship'] = 35
+    elif year_text == "Senior":
+        weights['Friendship'] = 0
+        weights['Max Energy'] = 0
+
+    if mood_val == 5:
+        weights['Mood'] = 0
+        log.info("Mood already maxxed")
+
+    if energy > 90:
+        weights['HP'] = 0
+        log.info("Energy already near full")
+    elif 40 <= energy <= 60:
+        weights['HP'] = 30
+        log.info("Focusing on energy to avoid rest")
+
     best_choice = None
     best_score = -1
-    
+
     for choice_num, choice_stats in stats.items():
-        # Convert choice_num to int (JSON keys are strings)
         choice_num_int = int(choice_num)
         score = 0
-        
-        # Weight different stats (adjust weights as needed)
-        weights = {
-            'Power': 2,
-            'Speed': 2, 
-            'Guts': 1.5,
-            'Stamina': 1.5,
-            'Wisdom': 1,
-            'Friendship': 1,
-            'Mood': 1,
-            'Max Energy': 1,
-            'HP': 1,
-            'Skill': 3,
-            'Skill Hint': 2,
-            'Skill Pts': 2
-        }
-        
         for stat, value in choice_stats.items():
             if stat in weights:
                 score += value * weights[stat]
-        
         if score > best_score:
             best_score = score
             best_choice = choice_num_int
-    
+
     if best_choice:
         log.info(f"🎯 Optimal choice: {best_choice} (Score: {best_score})")
         return best_choice
-    
-    # Fallback: return first choice if no scoring possible
+
     if choices:
         first_choice = min(int(k) for k in choices.keys())
         log.info(f"🔄 Fallback choice: {first_choice}")
         return first_choice
-    
+
     return 1
     
 # Cache for automatic event choices to avoid repeated web requests
@@ -289,7 +307,7 @@ def get_event_choice(ctx: UmamusumeContext, event_name: str) -> int:
     
     # NEW: Try local database first (FAST - no web scraping)
     log.info(f"🔍 Checking local database for event '{event_name}'...")
-    local_choice = get_local_event_choice(event_name)
+    local_choice = get_local_event_choice(ctx, event_name)
     if local_choice is not None:
         log.info(f"⚡ FAST: Found event '{event_name}' in local database - Choice {local_choice}")
         return local_choice

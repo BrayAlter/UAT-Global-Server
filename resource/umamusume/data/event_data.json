@@ -2078,14 +2078,14 @@
       }
     }
   },
-  "Extra Training (Curren Chan)": {
+  "Extra Training": {
     "choices": {
       "1": "Extra Training (Curren Chan) (Choice 1)",
       "2": "Extra Training (Curren Chan) (Choice 2)"
     },
     "stats": {
       "1": {
-        "Friendship": 0,
+        "Friendship": 5,
         "Guts": 0,
         "HP": -5,
         "Max Energy": 0,
@@ -2094,7 +2094,7 @@
         "Skill": 0,
         "Skill Hint": 0,
         "Skill Pts": 0,
-        "Speed": 0,
+        "Speed": 5,
         "Stamina": 0,
         "Wisdom": 0
       },

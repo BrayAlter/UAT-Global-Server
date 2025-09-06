@@ -30,8 +30,9 @@
               </div>
               <div class="form-group">
                 <label for="selectExecuteMode">⭐ Execution Mode</label>
-                <select v-model="selectedExecuteMode" class="form-control" id="selectExecuteMode">
-                  <option value=1>One-time</option>
+                <select v-model.number="selectedExecuteMode" class="form-control" id="selectExecuteMode">
+                  <option :value="1">One-time</option>
+                  <option :value="3">Loop until canceled</option>
                 </select>
               </div>
               <div class="row">
@@ -1802,20 +1803,21 @@ export default {
             "preliminaryRoundSelections": [...this.preliminaryRoundSelections],
             "aoharuTeamNameSelection": this.aoharuTeamNameSelection
           } : null
-        },
-        cron_job_info: {},
+        }
       }
       if (this.selectedExecuteMode === 2) {
-        payload.cron_job_info = {
+        payload.cron_job_config = {
           cron: this.cron
         }
       }
-      console.log(JSON.stringify(payload))
-      this.axios.post("/task", JSON.stringify(payload)).then(
+      console.log('POST /task', payload)
+      this.axios.post("/task", payload).then(
         () => {
           $('#create-task-list-modal').modal('hide');
         }
-      )
+      ).catch(e => {
+        console.error(e)
+      })
     },
     applyPresetRace: function () {
       this.selectedScenario = this.presetsUse.scenario || 1

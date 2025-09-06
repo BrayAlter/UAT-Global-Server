@@ -14,6 +14,7 @@ class TaskExecuteMode(Enum):
     TASK_EXECUTE_MODE_INVALID = 0
     TASK_EXECUTE_MODE_ONE_TIME = 1
     TASK_EXECUTE_MODE_CRON_JOB = 2
+    TASK_EXECUTE_MODE_LOOP = 3
 
 
 class TaskStatus(Enum):

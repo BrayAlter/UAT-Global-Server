@@ -67,6 +67,13 @@ class Scheduler:
                                         now = datetime.datetime.now()
                                         cron = croniter.croniter(task.cron_job_config.cron, now)
                                         task.cron_job_config.next_time = cron.get_next(datetime.datetime)
+                    elif task.task_execute_mode == TaskExecuteMode.TASK_EXECUTE_MODE_LOOP:
+                        if not task_executor.active:
+                            if task.task_status in [TaskStatus.TASK_STATUS_SUCCESS, TaskStatus.TASK_STATUS_FAILED]:
+                                task.task_status = TaskStatus.TASK_STATUS_PENDING
+                            if task.task_status == TaskStatus.TASK_STATUS_PENDING:
+                                executor_thread = threading.Thread(target=task_executor.start, args=([task]))
+                                executor_thread.start()
                     else:
                         log.warning("Unknown task type: " + str(task.task_execute_mode) + ", task_id: " + str(task.task_id))
 

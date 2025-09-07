@@ -52,19 +52,8 @@ class TrainingInfo:
         self.support_card_info_list = []
 
     def log_training_info(self, scenario_type: ScenarioType):
-        log.info("Training Result: Speed: %s, Stamina: %s, Power: %s, Guts: %s, Intelligence: %s, Skill Points: %s", self.speed_incr,
-                 self.stamina_incr, self.power_incr, self.will_incr,
-                 self.intelligence_incr, self.skill_point_incr)
-        text = "Support cards for this training: ["
-        if scenario_type == ScenarioType.SCENARIO_TYPE_AOHARUHAI:       
-            for c in self.support_card_info_list:
-                text += "[Support Card Name: " + str(c.name) + ", Support Card Type: " + str(c.card_type.name) + ", Support Card Bond Level: " + str(c.favor.name) + ", Can Increase Aoharu Friendship: " + str(c.can_incr_aoharu_train) + "] "
-        else:
-            for c in self.support_card_info_list:
-                if c.favor != SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_UNKNOWN:
-                    text += "[Support Card Name: " + str(c.name) + ", Support Card Type: " + str(c.card_type.name) + ", Support Card Bond Level: " + str(c.favor.name) + "] "
-        text += "]"
-        log.info(text)
+        #useless for now
+        return
 
 
 class UmaAttribute:

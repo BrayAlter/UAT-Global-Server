@@ -5,7 +5,6 @@ import numpy as np
 import cv2
 from module.umamusume.asset.template import UI_CULTIVATE_URA_RACE_1, UI_CULTIVATE_URA_RACE_2, UI_CULTIVATE_URA_RACE_3
 from bot.recog.image_matcher import image_match
-
 log = logger.get_logger(__name__)
 
 # Simple cache for race data to avoid repeated lookups

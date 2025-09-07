@@ -29,63 +29,63 @@ def default_speed_support_card_score(ctx: UmamusumeContext, info: SupportCardInf
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
         return 0.1
-    return 1
+    return 0.2
 
 
 def default_stamina_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
         return 0.1
-    return 1
+    return 0.2
 
 
 def default_power_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
         return 0.1
-    return 1
+    return 0.2
 
 
 def default_will_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
         return 0.1
-    return 1
+    return 0.2
 
 
 def default_intelligence_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
         return 0.1
-    return 1
+    return 0.2
 
 
 def default_friend_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
         return 0.1
-    return 1.5
+    return 0.2
 
 
 def default_npc_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
         return 0.1
-    return 1
+    return 0.2
 
 
 def default_group_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
         return 0.1
-    return 1
+    return 0.2
 
 
 def default_unknown_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
         return 0.1
-    return 0.5
+    return 0.2
 
 SCORE_DICT: dict = {
     SupportCardType.SUPPORT_CARD_TYPE_SPEED: {

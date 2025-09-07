@@ -364,7 +364,6 @@ def parse_training_support_card(ctx: UmamusumeContext, img, train_type: Training
 
     facility = getattr(train_type, "name", str(train_type)).replace("TRAINING_TYPE_", "").title()
     rainbow_count = 0
-    rgb_list = []
     irrelevant_maxed_count = 0
     weighted_list: list[SupportCardInfo] = []
 
@@ -390,13 +389,13 @@ def parse_training_support_card(ctx: UmamusumeContext, img, train_type: Training
                 irrelevant_maxed_count += 1
                 weighted_list.pop()
             continue
-        if is_maxed:
+        if is_maxed and not not_senior:
             rainbow_count += 1
-            rgb_list.append(f"({r},{g},{b})")
             weighted_list.append(sc)
+            log.info(f'Rainbow training in "{facility}": {rainbow_count}')
 
     ctx.cultivate_detail.turn_info.training_info_list[train_type.value - 1].support_card_info_list = weighted_list
-    log.info(f'Rainbow training in "{facility}": {rainbow_count}')
+
     if not_senior:
         log.info(f'Irrelevant maxed training cards in "{facility}": {irrelevant_maxed_count}')
         

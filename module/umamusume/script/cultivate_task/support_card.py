@@ -1,7 +1,7 @@
 from module.umamusume.context import UmamusumeContext
 from module.umamusume.types import SupportCardInfo, TurnInfo
 from module.umamusume.define import TrainingType, SupportCardType, SupportCardFavorLevel
-
+from module.umamusume.context import logger
 DEFAULT = 0
 
 import bot.base.log as logger
@@ -25,67 +25,75 @@ def get_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo):
     return score
 
 
+def non_max_weight(date: int) -> float:
+    if date <= 36:
+        return 0.04
+    elif date <= 64:
+        return 0.03
+    return 0.01
+
+
 def default_speed_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
-        return 0.1
-    return 0.2
+        return 0.01
+    return non_max_weight(ctx.cultivate_detail.turn_info.date)
 
 
 def default_stamina_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
-        return 0.1
-    return 0.2
+        return 0.01
+    return non_max_weight(ctx.cultivate_detail.turn_info.date)
 
 
 def default_power_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
-        return 0.1
-    return 0.2
+        return 0.01
+    return non_max_weight(ctx.cultivate_detail.turn_info.date)
 
 
 def default_will_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
-        return 0.1
-    return 0.2
+        return 0.01
+    return non_max_weight(ctx.cultivate_detail.turn_info.date)
 
 
 def default_intelligence_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
-        return 0.1
-    return 0.2
+        return 0.01
+    return non_max_weight(ctx.cultivate_detail.turn_info.date)
 
 
 def default_friend_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
-        return 0.1
-    return 0.2
+        return 0.01
+    return non_max_weight(ctx.cultivate_detail.turn_info.date)
 
 
 def default_npc_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
-        return 0.1
-    return 0.2
+        return 0.01
+    return non_max_weight(ctx.cultivate_detail.turn_info.date)
 
 
 def default_group_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
-        return 0.1
-    return 0.2
+        return 0.01
+    return non_max_weight(ctx.cultivate_detail.turn_info.date)
 
 
 def default_unknown_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
     if (info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_3 or
             info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_4):
-        return 0.1
-    return 0.2
+        return 0.01
+    return non_max_weight(ctx.cultivate_detail.turn_info.date)
 
 SCORE_DICT: dict = {
     SupportCardType.SUPPORT_CARD_TYPE_SPEED: {

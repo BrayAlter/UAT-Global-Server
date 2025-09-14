@@ -8,7 +8,7 @@ import time
 from bot.base.task import TaskStatus, EndTaskReason
 from bot.recog.image_matcher import image_match, compare_color_equal
 from bot.recog.ocr import ocr_line, find_similar_text
-from module.umamusume.asset.race_data import RACE_LIST
+from module.umamusume.asset.race_data import RACE_LIST, UMAMUSUME_RACE_TEMPLATE_PATH
 from module.umamusume.context import UmamusumeContext
 from module.umamusume.types import SupportCardInfo
 from module.umamusume.asset import *
@@ -657,8 +657,10 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                             for search_race_id in range(len(RACE_LIST)):
                                 if search_race_id == race_id:  # Skip our target race
                                     continue
-                                    
-                                target_race_name = RACE_LIST[search_race_id][1]
+                                entry = RACE_LIST[search_race_id]
+                                if not entry or len(entry) < 2:
+                                    continue
+                                target_race_name = entry[1]
                                 in_game_race_name = convert_race_name_to_ingame_format(search_race_id)
                                 
                                 # Check if OCR text matches this race

@@ -12,9 +12,10 @@ import threading
 from bot.base.common import ImageMatchMode
 from bot.base.point import ClickPoint, ClickPointType
 from bot.conn.ctrl import AndroidController
-from bot.recog.image_matcher import template_match
+from bot.recog.image_matcher import template_match, image_match
 from config import CONFIG, Config
 from dataclasses import dataclass, field
+from module.umamusume.asset.template import REF_DONT_CLICK
 
 log = logger.get_logger(__name__)
 
@@ -101,6 +102,17 @@ class U2AndroidController(AndroidController):
     def click(self, x, y, name="", random_offset=True, max_x=720, max_y=1280, hold_duration=0):
         if name != "":
             log.debug("click >> " + name)
+
+        try:
+            if 263 <= x <= 458 and 559 <= y <= 808:
+                screen_gray = self.get_screen(to_gray=True)
+                match = image_match(screen_gray, REF_DONT_CLICK)
+                if getattr(match, "find_match", False):
+                    log.log("unsafe click blocked")
+                    return
+        except Exception as e:
+            log.info("wtf")
+
         if random_offset: # why was this just "random" before
             offset_x = random.randint(-5, 5)
             offset_y = random.randint(-5, 5)

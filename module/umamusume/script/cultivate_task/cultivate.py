@@ -186,6 +186,21 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
             else:
                 # Regular race (including extra races) - proceed normally
                 log.info(f"🏁 Proceeding with race operation (race_id: {race_id})")
+                ti = ctx.cultivate_detail.turn_info
+                op = ctx.cultivate_detail.turn_info.turn_operation
+                if not hasattr(ti, 'race_search_started_at') or getattr(ti, 'race_search_id', None) != race_id:
+                    ti.race_search_started_at = time.time()
+                    ti.race_search_id = race_id
+                elif time.time() - ti.race_search_started_at > 30:
+                    log.info("Skipping race")
+                    op.race_id = 0
+                    op.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN
+                    ctx.cultivate_detail.turn_info.parse_train_info_finish = False
+                    if hasattr(ti, 'race_search_started_at'):
+                        delattr(ti, 'race_search_started_at')
+                    if hasattr(ti, 'race_search_id'):
+                        delattr(ti, 'race_search_id')
+                    return
                 if 36 < ctx.cultivate_detail.turn_info.date <= 40 or 60 < ctx.cultivate_detail.turn_info.date <= 64:
                     ctx.ctrl.click_by_point(CULTIVATE_RACE_SUMMER)
                 else:
@@ -358,24 +373,24 @@ def script_support_card_select(ctx: UmamusumeContext):
 
 
 def script_follow_support_card_select(ctx: UmamusumeContext):
-    img = ctx.ctrl.get_screen()
-    while True:
-        selected = find_support_card(ctx, img)
-        if selected:
-            break
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        if compare_color_equal(img[1096, 693], [125, 120, 142]):
-            while True:
-                img = cv2.cvtColor(ctx.ctrl.get_screen(), cv2.COLOR_BGR2RGB)
-                if compare_color_equal(img[127, 697], [211, 209, 219]):
-                    ctx.ctrl.swipe(x1=350, y1=400, x2=350, y2=1000, duration=200, name="")
-                else:
-                    break
-            ctx.ctrl.click_by_point(FOLLOW_SUPPORT_CARD_SELECT_REFRESH)
-            return
-        ctx.ctrl.swipe(x1=350, y1=1000, x2=350, y2=400, duration=1000, name="")
-        time.sleep(1)
+    cycles = 18
+    for _ in range(cycles):
         img = ctx.ctrl.get_screen()
+        for __ in range(3):
+            if find_support_card(ctx, img):
+                return
+            ctx.ctrl.swipe(x1=350, y1=1000, x2=350, y2=400, duration=600, name="scroll down list")
+            time.sleep(0.7)
+            img = ctx.ctrl.get_screen()
+        for __ in range(3):
+            if find_support_card(ctx, img):
+                return
+            ctx.ctrl.swipe(x1=350, y1=400, x2=350, y2=1000, duration=600, name="scroll up list")
+            time.sleep(0.7)
+            img = ctx.ctrl.get_screen()
+        ctx.ctrl.click_by_point(FOLLOW_SUPPORT_CARD_SELECT_REFRESH)
+        time.sleep(1.6)
+    ctx.ctrl.click_by_point(FOLLOW_SUPPORT_CARD_SELECT_REFRESH)
 
 
 def script_cultivate_final_check(ctx: UmamusumeContext):
@@ -526,12 +541,35 @@ def script_cultivate_race_list(ctx: UmamusumeContext):
                 ctx.ctrl.swipe(x1=20, y1=850, x2=20, y2=1000, duration=200, name="")
                 swiped = True
             img = ctx.ctrl.get_screen()
+            ti = ctx.cultivate_detail.turn_info
+            current_race_id = ctx.cultivate_detail.turn_info.turn_operation.race_id
+            if not hasattr(ti, 'race_search_started_at') or getattr(ti, 'race_search_id', None) != current_race_id:
+                ti.race_search_started_at = time.time()
+                ti.race_search_id = current_race_id
             while True:
+                if time.time() - ti.race_search_started_at > 30:
+                    log.warning("⏱️ Race search timeout (30s). Skipping race and returning to training")
+                    # Set to UNKNOWN to allow AI to pick training; avoid hardcoding Speed
+                    op = ctx.cultivate_detail.turn_info.turn_operation
+                    op.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN
+                    op.race_id = 0
+                    ctx.cultivate_detail.turn_info.parse_train_info_finish = False
+                    # Reset timer attributes
+                    if hasattr(ti, 'race_search_started_at'):
+                        delattr(ti, 'race_search_started_at')
+                    if hasattr(ti, 'race_search_id'):
+                        delattr(ti, 'race_search_id')
+                    ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
+                    return
                 race_id = ctx.cultivate_detail.turn_info.turn_operation.race_id
                 log.info(f"🔍 Looking for race ID: {race_id}")
                 selected = find_race(ctx, img, race_id)
                 if selected:
                     log.info(f"✅ Found race ID: {race_id}")
+                    if hasattr(ti, 'race_search_started_at'):
+                        delattr(ti, 'race_search_started_at')
+                    if hasattr(ti, 'race_search_id'):
+                        delattr(ti, 'race_search_id')
                     time.sleep(1)
                     ctx.ctrl.click_by_point(CULTIVATE_GOAL_RACE_INTER_1)
                     time.sleep(1)
@@ -539,7 +577,19 @@ def script_cultivate_race_list(ctx: UmamusumeContext):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 if not compare_color_equal(img[1006, 701], [211, 209, 219]):
                     log.warning(f"❌ Target Race Not Found - Race ID: {race_id}")
-                    # No suitable race found, use backup operation
+
+                    if hasattr(ti, 'race_search_started_at') and (time.time() - ti.race_search_started_at > 30):
+                        op = ctx.cultivate_detail.turn_info.turn_operation
+                        op.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN
+                        op.race_id = 0
+                        ctx.cultivate_detail.turn_info.parse_train_info_finish = False
+
+                        if hasattr(ti, 'race_search_started_at'):
+                            delattr(ti, 'race_search_started_at')
+                        if hasattr(ti, 'race_search_id'):
+                            delattr(ti, 'race_search_id')
+                        ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
+                        return
                     if ctx.cultivate_detail.turn_info.turn_operation.race_id == 0:
                         ctx.cultivate_detail.turn_info.turn_operation.turn_operation_type = ctx.cultivate_detail.turn_info.turn_operation.turn_operation_type_replace
                     ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
@@ -917,6 +967,11 @@ def script_cultivate_learn_skill(ctx: UmamusumeContext):
         return
 
     # Click skills
+    if len(target_skill_list) == 0:
+        ctx.cultivate_detail.learn_skill_done = True
+        ctx.cultivate_detail.turn_info.turn_learn_skill_done = True
+        ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_FINISH)
+        return
     log.info(f"🎯 Starting skill execution for {len(target_skill_list)} skills: {target_skill_list}")
     
     # Create a copy of the target list to avoid modifying the original

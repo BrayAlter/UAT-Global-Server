@@ -108,7 +108,7 @@ class U2AndroidController(AndroidController):
                 screen_gray = self.get_screen(to_gray=True)
                 match = image_match(screen_gray, REF_DONT_CLICK)
                 if getattr(match, "find_match", False):
-                    log.log("unsafe click blocked")
+                    log.info("unsafe click blocked")
                     return
         except Exception as e:
             log.info("wtf")

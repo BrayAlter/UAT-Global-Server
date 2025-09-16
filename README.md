@@ -35,6 +35,7 @@ This project is a **Global Server adaptation** of the original China Server vers
     - **Running styles** 
     - **Alarm clock usage** 
     - **Building friendship and rainbow trainings** 
+    - **Optimal event choices (Knows when to build friendship/recover energy)** 
     - **Pretty much everything you need to do in a career run**
 
 - ✅ **Completely hands off**: Recover tp, Starting runs, finding the right guest card

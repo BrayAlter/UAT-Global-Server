@@ -1,7 +1,7 @@
 # ⚠️🚨 !!ATTENTION!! 🚨⚠️  
 ### THE ORGINAL CREATOR IS MISISNG IN ACTION  
 
-unfortunately I too will no longer have time to work on this so hopefullt he returns soon
+unfortunately I too will no longer have time to work on this so hopefully he returns soon
 
 ⏰ On **September 30th 2025 onwards** I will no longer have time to work on this.  
 I will do what I can to iron out everything before then.  

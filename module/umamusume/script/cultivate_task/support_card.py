@@ -70,7 +70,7 @@ def default_will_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo
     base = non_max_weight(ctx.cultivate_detail.turn_info.date)
     if info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_1:
         base += 0.01
-    return base
+    return base - 0.001
 
 
 def default_intelligence_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:
@@ -80,7 +80,7 @@ def default_intelligence_support_card_score(ctx: UmamusumeContext, info: Support
     base = non_max_weight(ctx.cultivate_detail.turn_info.date)
     if info.favor == SupportCardFavorLevel.SUPPORT_CARD_FAVOR_LEVEL_1:
         base += 0.01
-    return base
+    return base + 0.001
 
 
 def default_friend_support_card_score(ctx: UmamusumeContext, info: SupportCardInfo) -> float:

@@ -1,7 +1,7 @@
 # ⚠️🚨 !!ATTENTION!! 🚨⚠️  
-### THE ORGINAL CREATOR IS MISISNG IN ACTION  
+### THE ORGINAL CREATOR IS MISSING IN ACTION  
 
-unfortunately I too will no longer have time to work on this so hopefullt he returns soon
+unfortunately I too will no longer have time to work on this so hopefully he returns soon
 
 ⏰ On **September 30th 2025 onwards** I will no longer have time to work on this.  
 I will do what I can to iron out everything before then.  
@@ -9,6 +9,7 @@ But when a new scenario shows up (Make a new track, grand live ect ect), I need 
 
 I will be relying on you guys to automate the future senarios. 🙏
 
+If not I guess ill be stuck playing URA lmao
 
 # 🏇 Umamusume Auto Trainer (Global Server Edition)
 
@@ -51,7 +52,7 @@ This project is a **Global Server adaptation** of the original China Server vers
     - **Pretty much everything you need to do in a career run**
 
 - ✅ **Completely hands off**: Recover tp, Starting runs, finding the right guest card
-  - Everything is automated you can just afk until legacy umas are full (fixing "Its a new day" tonight)
+  - Everything is automated you can just afk for **DAYS** until legacy umas are full (fixing "Its a new day" tonight)
 
 
 - ✅ **Saving of presets**: Save training parameters for easy access in future runs 

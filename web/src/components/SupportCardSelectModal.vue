@@ -104,7 +104,7 @@ export default {
         {id:10007, name:'The Setting Sun And Rising Stars', desc:'Special Week'},
         {id:10008, name:'Turbo Booooost! ', desc:'Twin Turbo'},
         {id:10009, name:'Fire at My Heels', desc:'Kitasan Black'},
-        {id:10010, name:'身为新娘！', desc:'Kawakami Princess'},
+        {id:10010, name:'Princess Bride', desc:'Kawakami Princess'},
         {id:10011, name:'Two Pieces', desc:'Narita Brian'},
         {id:10012, name:'独享冰凉？', desc:'Sweep Tosho'},
         {id:10013, name:'优俊王传说·登上最强宝座', desc:'Gold Ship'},

@@ -1,16 +1,29 @@
 import cv2
+import time
 
 from bot.recog.image_matcher import image_match
 from module.umamusume.context import UmamusumeContext
 from module.umamusume.script.cultivate_task.ai import get_operation
 from module.umamusume.asset.point import *
+from module.umamusume.asset.template import *
 import bot.base.log as logger
 
 log = logger.get_logger(__name__)
 
 
 def before_hook(ctx: UmamusumeContext):
-    pass
+    img = cv2.cvtColor(ctx.current_screen, cv2.COLOR_BGR2GRAY)
+    if image_match(img, REF_HOME_GIFT).find_match:
+        ctx.ctrl.click(552, 1082, "resume 1")
+        time.sleep(1)
+        img = cv2.cvtColor(ctx.ctrl.get_screen(), cv2.COLOR_BGR2GRAY)
+        if image_match(img, REF_RESUME_CAREER).find_match:
+            ctx.ctrl.click(505, 908, "resume 2")
+        return
+    if image_match(img, REF_RESUME_CAREER).find_match:
+        ctx.ctrl.click(505, 908, "resume 2")
+        return
+
 
 
 def after_hook(ctx: UmamusumeContext):

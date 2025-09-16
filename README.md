@@ -34,6 +34,8 @@ This project is a **Global Server adaptation** of the original China Server vers
     - **Claw machine**
     - **Running styles** 
     - **Alarm clock usage** 
+    - **Building friendship and rainbow trainings** 
+    - **Pretty much everything you need to do in a career run**
 
 - ✅ **Completely hands off**: Recover tp, Starting runs, finding the right guest card
   - Everything is automated you can just afk until legacy umas are full (fixing "Its a new day" tonight)

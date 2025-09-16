@@ -24,51 +24,22 @@ This project is a **Global Server adaptation** of the original China Server vers
 
 
 ---
-
-
-## 🌟 **What's New in Global Server Edition**
-
-### 🎯 **Major Improvements**
-- **🌍 Global Server Migration**: 70% translation and asset updates for Global Server compatibility
-- **🎨 Enhanced Web Interface**: Advanced race filtering, skill choice system, and improved user experience
-- **🤖 Reliable Race Identification**: Dual verification (template + OCR) for accurate race ID detection
-- **⚡ Performance Optimization**: JSON-based data loading for faster operation
-- **📱 Smart Device Detection**: Automatic ADB device detection and selection when start the program (emulator must open the game first)
-
-### 🆕 **New Features**
-- **Advanced Race Filtering**: Filter by race type, distance, terrain, and event character
-- **Skill Choice System**: Intelligent skill selection interface in web application
-- **Event Choice Picker**: Smart event selection for optimal training
-- **70% English Translation**: Major UI and system text translated to English
-- **Auto Device Selection**: Interactive ADB device detection and selection
-- **🎮 Manual Skill Purchase**: New feature allowing manual skill selection at the end of career while maintaining automatic skill learning during normal training
-- **Preset Saving System (UAT Web)**: Save and load your preferred race filter settings instantly
-
-### 🔄 **Current Limitations**
-- **Uma Musume Selection**: Must be done manually in-game (not yet automated)
-- **Support Card Selection**: Manual selection in-game required
-
-
 ## 🚀 **Features**
 
 ### **Core Automation**
-- ✅ **Automatic Training**: Complete training scenarios for all Uma Musume
-- ✅ **Customizable Targets**: Training attributes, racing tactics, additional races
-- ✅ **Skill Learning**: Optimized skill acquisition for 3-star spark farming
-- ✅ **Manual Skill Purchase**: Option to manually select skills at career end while keeping auto-learning during training
-- ✅ **Inheritance Compatibility**: Improved training strategy support
-- ✅ **Loop Training Bot Logic**: Continuous stat-growth training loop for long runs — see the 📹 [Demo Video](https://youtu.be/XDETTIpzGd8)
-- ✅ **Reliable Race Identification**: Template + OCR dual verification with automatic fallback
-- ✅ **Extra Race Prioritization**: Extra races override recreation/rest/medic and use specific race IDs
+- ✅ **Automatic Training**: Complete training scenarios for ALL Uma Musume  
+  - This includes the handling of:  
+    - **Custom races** 
+    - **Skill acquisition**
+    - **Claw machine**
+    - **Running styles** 
+    - **Alarm clock usage** 
 
-### **Advanced Web Interface**
-- 🎛️ **Race Management**: Advanced filtering and selection tools
-- 📊 **Real-time Monitoring**: Live task status and progress tracking
-- ⚙️ **Easy Configuration**: Intuitive settings and preset management
-- 🎯 **Smart Character Filter**: Preserves selections when switching characters, shows live match counters, and lets you clear all or keep only compatible races (manual select on UAT web; Bootstrap confirmation dialog). Includes support for the playable character Smart Falcon.
-- 🔔 **Web Notifications**: Modern notification system for manual skill purchase
-- 💾 **Preset Saving System**: Quickly save/load race filter presets
-- 🖥️ **Remastered UI**: Modernized layout and improved responsiveness
+- ✅ **Completely hands off**: Recover tp, Starting runs, finding the right guest card
+  - Everything is automated you can just afk until legacy umas are full (fixing "Its a new day" tonight)
+
+
+- ✅ **Saving of presets**: Save training parameters for easy access in future runs 
 
 ## 📦 **Installation & Setup**
 
@@ -173,41 +144,6 @@ Access the web interface at `http://127.0.0.1:8071` to configure and start tasks
 2. **Recognition failures**: Manual intervention, then restart
 3. **Connection resets**: Restart both emulator and script
 
-## 🛠️ **Technical Details**
-
-### **System Requirements**
-- **OS**: Windows 10/11
-- **Python**: 3.10.9 (for source builds)
-- **Emulator**: Android emulator with ADB support
-- **Memory**: 4GB+ RAM recommended
-
-### **Dependencies**
-- **Computer Vision**: OpenCV for image recognition
-- **Machine Learning**: PaddleOCR for text detection
-- **Web Framework**: FastAPI + Vue.js
-- **Automation**: UIAutomator2 for Android control
-
-## 🎯 **Roadmap**
-
-### **Planned Features**
-- [ ] **Repeatable Tasks**: Automated execution at specific repeatable times
-- [x] **AI Training Logic**: Enhanced decision-making algorithms
-- [ ] **Event Configuration**: Advanced event choice options
-- [ ] **Daily Automation**: Auto-complete daily tasks (daily races, fans farming, event)
-- [x] **Uma Musume Auto-Selection**: Automated character, legacy, and support card selection
-- [x] **Card Name Translation**: Complete English translation for support card names
-- [ ] **Accurate Translation**: Complete English accurate translation
-
-### **Recent Updates**
-- ✅ Smart Character Race Filtering (keeps selections, live counters, keep-only-compatible option)
-- ✅ Dual Verification Race ID (template + OCR with fallback)
-- ✅ Extra Race Prioritization (overrides recreation/rest/medic; uses specific race IDs)
-- ✅ Loop Training Bot Logic
-- ✅ Preset Saving System in web UI (save/load race filter presets)
-- ✅ Smart Falcon added to Character Race Filter
-- ✅ Health checks before startup (ADB/device/screenshot pipeline)
-- ✅ Web UI remaster (modern layout; fixed “Select All G1 G2 G3”)
-- ✅ Multiple fixes: race list refresh, modal sizing, selection reset, corrupted screenshots, CSS conflicts
 
 ## 🤝 **Contributing**
 

@@ -51,7 +51,7 @@ This project is a **Global Server adaptation** of the original China Server vers
     - **Pretty much everything you need to do in a career run**
 
 - ✅ **Completely hands off**: Recover tp, Starting runs, finding the right guest card
-  - Everything is automated you can just afk until legacy umas are full (fixing "Its a new day" tonight)
+  - Everything is automated you can just afk for **DAYS** until legacy umas are full (fixing "Its a new day" tonight)
 
 
 - ✅ **Saving of presets**: Save training parameters for easy access in future runs 

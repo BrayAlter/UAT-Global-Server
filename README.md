@@ -8,6 +8,7 @@ I will do what I can to iron out everything before then.
 But when a new scenario shows up (Make a new track, grand live ect ect), I need **YOUR** help to make a **fork** to deal with that.  
 
 I will be relying on you guys to automate the future senarios. 🙏
+
 If not I guess ill be stuck playing URA lmao
 
 # 🏇 Umamusume Auto Trainer (Global Server Edition)

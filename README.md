@@ -1,5 +1,5 @@
 # ⚠️🚨 !!ATTENTION!! 🚨⚠️  
-### THE ORGINAL CREATOR IS MISISNG IN ACTION  
+### THE ORGINAL CREATOR IS MISSING IN ACTION  
 
 unfortunately I too will no longer have time to work on this so hopefully he returns soon
 

@@ -655,8 +655,6 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                             # Try to find which race ID this OCR text corresponds to
                             # Search through all races to find a match
                             for search_race_id in range(len(RACE_LIST)):
-                                if search_race_id == race_id:  # Skip our target race
-                                    continue
                                 entry = RACE_LIST[search_race_id]
                                 if not entry or len(entry) < 2:
                                     continue
@@ -675,32 +673,11 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                         except Exception as e:
                             log.debug(f"OCR failed: {e}")
                         
-                        # STEP 3: DUAL VERIFICATION - Both template and OCR must agree
-                        if template_success and ocr_race_id is not None:
-                            if ocr_race_id == race_id:
-                                # Both methods agree on the same race ID - this is the correct race!
-                                log.info(f"✅ DUAL VERIFICATION SUCCESS: Template and OCR both identify race ID {race_id}")
-                                ctx.ctrl.click(match_result.center_point[0], match_result.center_point[1],
-                                               "Select race (verified): " + str(RACE_LIST[race_id][1]))
-                                return True
-                            else:
-                                # Template and OCR disagree - this is NOT the correct race
-                                log.warning(f"⚠️ DUAL VERIFICATION FAILED: Template suggests race {race_id}, but OCR suggests race {ocr_race_id}")
-                                log.info(f"🔄 Continuing to search for the correct race...")
-                                # Mark this area as searched and continue
-                                img[match_result.matched_area[0][1]:match_result.matched_area[1][1],
-                                    match_result.matched_area[0][0]:match_result.matched_area[1][0]] = 0
-                                continue
-                        elif template_success and ocr_race_id is None:
-                            # Template succeeded but OCR failed - use template only as fallback
-                            log.warning(f"⚠️ OCR failed, but template succeeded. Using template-only verification for race {race_id}")
+                        if (ocr_race_id == race_id) or template_success:
                             ctx.ctrl.click(match_result.center_point[0], match_result.center_point[1],
-                                           "Select race (template-only): " + str(RACE_LIST[race_id][1]))
+                                           "Select race: " + str(RACE_LIST[race_id][1]))
                             return True
                         else:
-                            # Both methods failed - continue searching
-                            log.debug(f"❌ Both template and OCR failed for race {race_id}, continuing search...")
-                            # Mark this area as searched and continue
                             img[match_result.matched_area[0][1]:match_result.matched_area[1][1],
                                 match_result.matched_area[0][0]:match_result.matched_area[1][0]] = 0
                             continue

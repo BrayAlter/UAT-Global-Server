@@ -104,12 +104,6 @@ def script_info(ctx: UmamusumeContext):
             title_text = find_similar_text(original_text, TITLE, 0.6)
             if title_text == "":
                 log.warning(f"Still no match with lower threshold - OCR: '{original_text}'")
-                try:
-                    ctx.ctrl.click_by_point(ESCAPE)
-                    log.info("fallback click")
-                    time.sleep(1)
-                except Exception as e:
-                    log.error(f"Fallback ESCAPE click failed: {e}")
                 return
             else:
                 log.info(f"✅ Found match with lower threshold: '{original_text}' -> '{title_text}'")
@@ -531,3 +525,4 @@ def script_info(ctx: UmamusumeContext):
         if title_text in (TITLE[37], TITLE[38]):
             ctx.ctrl.click_by_point(STORY_REWARDS_COLLECTED_CLOSE)
         time.sleep(1)
+

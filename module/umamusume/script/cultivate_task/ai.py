@@ -261,8 +261,38 @@ def get_operation(ctx: UmamusumeContext) -> TurnOperation | None:
         expect_operation_type = TurnOperationType.TURN_OPERATION_TYPE_REST
 
     if expect_operation_type is TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN:
+        date_num = ctx.cultivate_detail.turn_info.date
+        if date_num in (59, 60): 
+            rainbow = 0
+            try:
+                best_idx = training_score.index(np.max(training_score))
+                id_counts = {}
+                for sc in ctx.cultivate_detail.turn_info.training_info_list[best_idx].support_card_info_list:
+                    k = id(sc)
+                    id_counts[k] = id_counts.get(k, 0) + 1
+                rainbow = sum(1 for v in id_counts.values() if v >= 2)
+            except Exception:
+                rainbow = 0
+            if rainbow < 2:
+                log.info("Low rainbow count conserving energy for summer")
+                if ctx.cultivate_detail.turn_info.remain_stamina < 60:
+                    expect_operation_type = TurnOperationType.TURN_OPERATION_TYPE_REST
+                else:
+                    expect_operation_type = TurnOperationType.TURN_OPERATION_TYPE_TRAINING
+                    turn_operation.training_type = TrainingType.TRAINING_TYPE_INTELLIGENCE
+
+    if expect_operation_type is TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN:
         expect_operation_type = TurnOperationType.TURN_OPERATION_TYPE_TRAINING
-        turn_operation.training_type = TrainingType(training_score.index(np.max(training_score)) + 1)
+        try:
+            relevant_counts = [ctx.cultivate_detail.turn_info.training_info_list[i].relevant_count for i in range(5)]
+        except Exception:
+            relevant_counts = [0, 0, 0, 0, 0]
+        # log.info(f"relevant_counts = {relevant_counts}")
+        if all(rc == 0 for rc in relevant_counts):
+            log.info("no good training option. umamusume is a wit game")
+            turn_operation.training_type = TrainingType.TRAINING_TYPE_INTELLIGENCE
+        else:
+            turn_operation.training_type = TrainingType(training_score.index(np.max(training_score)) + 1)
 
     if turn_operation.turn_operation_type != TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN:
         turn_operation.turn_operation_type_replace = expect_operation_type

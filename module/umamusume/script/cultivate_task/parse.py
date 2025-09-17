@@ -369,6 +369,7 @@ def parse_training_support_card(ctx: UmamusumeContext, img, train_type: Training
     weighted_list: list[SupportCardInfo] = []
 
     not_senior = (year_text != "Senior")
+    senior_early_jul = isinstance(date_id, int) and date_id >= 61
 
     for sc in support_card_info_list:
         weighted_list.append(sc)
@@ -385,9 +386,13 @@ def parse_training_support_card(ctx: UmamusumeContext, img, train_type: Training
                 if match_rgb(p, 255, 235, 120) or match_rgb(p, 255, 173, 30):
                     is_maxed = True
 
-        is_rainbow = is_maxed and (not not_senior) and (sc_type == target)
-        if (not is_maxed) or is_rainbow:
-            relevant_count += 1
+        if senior_early_jul:
+            if is_maxed and (sc_type == target):
+                relevant_count += 1
+        else:
+            is_rainbow = is_maxed and (sc_type == target) and (year_text in ("Classic", "Senior"))
+            if (not is_maxed) or is_rainbow:
+                relevant_count += 1
 
         if sc_type != target:
             if not_senior and is_maxed:
@@ -398,6 +403,22 @@ def parse_training_support_card(ctx: UmamusumeContext, img, train_type: Training
             rainbow_count += 1
             weighted_list.append(sc)
             log.info(f'Rainbow training in "{facility}": {rainbow_count}')
+
+    if senior_early_jul:
+        filtered_list = []
+        for sc2 in weighted_list:
+            sc2_type = getattr(sc2, "card_type", None)
+            c2 = getattr(sc2, "center", None)
+            is_maxed_sc2 = False
+            if isinstance(c2, (tuple, list)) and len(c2) >= 2:
+                cx2, cy2 = int(c2[0]), int(c2[1]) + 75
+                if 0 <= cx2 < w and 0 <= cy2 < h:
+                    p2 = img[cy2, cx2]
+                    if match_rgb(p2, 255, 235, 120) or match_rgb(p2, 255, 173, 30):
+                        is_maxed_sc2 = True
+            if sc2_type == target and is_maxed_sc2:
+                filtered_list.append(sc2)
+        weighted_list = filtered_list
 
     til = ctx.cultivate_detail.turn_info.training_info_list[train_type.value - 1]
     til.support_card_info_list = weighted_list

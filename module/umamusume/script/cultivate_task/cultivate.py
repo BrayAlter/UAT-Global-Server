@@ -28,6 +28,14 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
         ctx.cultivate_detail.turn_info = TurnInfo()
         ctx.cultivate_detail.turn_info.date = current_date
 
+    if hasattr(ctx.cultivate_detail.turn_info, 'force_training_next') and ctx.cultivate_detail.turn_info.force_training_next:
+        log.info("Race fallback")
+        ctx.cultivate_detail.turn_info.parse_train_info_finish = False
+        ctx.cultivate_detail.turn_info.turn_operation = None
+        delattr(ctx.cultivate_detail.turn_info, 'force_training_next')
+        ctx.ctrl.click_by_point(TO_TRAINING_SELECT)
+        return
+
     # Parse main interface
     if not ctx.cultivate_detail.turn_info.parse_main_menu_finish:
         parse_cultivate_main_menu(ctx, img)
@@ -38,7 +46,7 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
         has_extra_race = len([race_id for race_id in ctx.cultivate_detail.extra_race_list 
                              if race_id in available_races]) != 0
         
-        if has_extra_race:
+        if has_extra_race and not hasattr(ctx.cultivate_detail.turn_info, 'block_race_this_turn'):
             log.info("🏆 Extra races available for current date - prioritizing races above all else")
             # Force parse training info to finish so we can proceed to race handling
             ctx.cultivate_detail.turn_info.parse_train_info_finish = True
@@ -115,7 +123,7 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
         return
 
     if not ctx.cultivate_detail.turn_info.parse_train_info_finish:
-        if has_extra_race or ctx.cultivate_detail.turn_info.remain_stamina < 48:
+        if (has_extra_race and not hasattr(ctx.cultivate_detail.turn_info, 'block_race_this_turn')) or ctx.cultivate_detail.turn_info.remain_stamina < 48:
             ctx.cultivate_detail.turn_info.parse_train_info_finish = True
             return
         else:
@@ -194,9 +202,9 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
                     ti.race_search_id = race_id
                 elif time.time() - ti.race_search_started_at > 30:
                     log.info("Skipping race")
+                    op.turn_operation_type = op.turn_operation_type_replace
                     op.race_id = 0
-                    op.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN
-                    ctx.cultivate_detail.turn_info.parse_train_info_finish = False
+                    ti.block_race_this_turn = True
                     if hasattr(ti, 'race_search_started_at'):
                         delattr(ti, 'race_search_started_at')
                     if hasattr(ti, 'race_search_id'):
@@ -226,8 +234,11 @@ def script_cultivate_training_select(ctx: UmamusumeContext):
             return
 
         else:
-            ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
-            return
+            if hasattr(ctx.cultivate_detail.turn_info, 'block_race_this_turn'):
+                pass
+            else:
+                ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
+                return
 
     if not ctx.cultivate_detail.turn_info.parse_train_info_finish:
         def _parse_training_in_thread(ctx, img, train_type):
@@ -311,6 +322,32 @@ def script_cultivate_training_select(ctx: UmamusumeContext):
 
         from module.umamusume.script.cultivate_task.ai import get_operation
         ctx.cultivate_detail.turn_info.turn_operation = get_operation(ctx)
+
+
+    ti = ctx.cultivate_detail.turn_info
+    op = ti.turn_operation
+    if hasattr(ti, 'block_race_this_turn') and (op is None or op.turn_operation_type != TurnOperationType.TURN_OPERATION_TYPE_TRAINING or op.training_type == TrainingType.TRAINING_TYPE_UNKNOWN):
+        best_idx = -1
+        best_score = -1
+        for i in range(5):
+            til = ti.training_info_list[i]
+            score = (
+                int(til.speed_incr) + int(til.stamina_incr) + int(til.power_incr)
+                + int(til.will_incr) + int(til.intelligence_incr) + int(til.skill_point_incr)
+            )
+            if score > best_score:
+                best_score = score
+                best_idx = i
+        if best_idx == -1 or best_score <= 0:
+            img = ctx.current_screen
+            viewed_type = parse_train_type(ctx, img)
+            best_idx = max(0, viewed_type.value - 1) if viewed_type != TrainingType.TRAINING_TYPE_UNKNOWN else 0
+        if op is None:
+            op = TurnOperation()
+            ti.turn_operation = op
+        op.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_TRAINING
+        from module.umamusume.define import TrainingType as TT
+        op.training_type = TT(best_idx + 1)
 
     op = ctx.cultivate_detail.turn_info.turn_operation
     if op.turn_operation_type == TurnOperationType.TURN_OPERATION_TYPE_TRAINING and op.training_type != TrainingType.TRAINING_TYPE_UNKNOWN:
@@ -549,12 +586,11 @@ def script_cultivate_race_list(ctx: UmamusumeContext):
                 ti.race_search_id = current_race_id
             while True:
                 if time.time() - ti.race_search_started_at > 30:
-                    log.warning("⏱️ Race search timeout (30s). Skipping race and returning to training")
-                    # Set to UNKNOWN to allow AI to pick training; avoid hardcoding Speed
                     op = ctx.cultivate_detail.turn_info.turn_operation
-                    op.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN
+                    op.turn_operation_type = op.turn_operation_type_replace
                     op.race_id = 0
-                    ctx.cultivate_detail.turn_info.parse_train_info_finish = False
+                    ti.block_race_this_turn = True
+                    ti.force_training_next = True
                     # Reset timer attributes
                     if hasattr(ti, 'race_search_started_at'):
                         delattr(ti, 'race_search_started_at')
@@ -577,24 +613,18 @@ def script_cultivate_race_list(ctx: UmamusumeContext):
                     return
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 if not compare_color_equal(img[1006, 701], [211, 209, 219]):
-                    log.warning(f"❌ Target Race Not Found - Race ID: {race_id}")
-
-                    if hasattr(ti, 'race_search_started_at') and (time.time() - ti.race_search_started_at > 30):
-                        op = ctx.cultivate_detail.turn_info.turn_operation
-                        op.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN
-                        op.race_id = 0
-                        ctx.cultivate_detail.turn_info.parse_train_info_finish = False
-
-                        if hasattr(ti, 'race_search_started_at'):
-                            delattr(ti, 'race_search_started_at')
-                        if hasattr(ti, 'race_search_id'):
-                            delattr(ti, 'race_search_id')
-                        ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
-                        return
-                    if ctx.cultivate_detail.turn_info.turn_operation.race_id == 0:
-                        ctx.cultivate_detail.turn_info.turn_operation.turn_operation_type = ctx.cultivate_detail.turn_info.turn_operation.turn_operation_type_replace
+                    log.warning(f"❌ Target Race Not Found - Race ID: {race_id}. Skipping race via replacement operation.")
+                    op = ctx.cultivate_detail.turn_info.turn_operation
+                    op.turn_operation_type = op.turn_operation_type_replace
+                    op.race_id = 0
+                    ti.block_race_this_turn = True
+                    ti.force_training_next = True
+                    if hasattr(ti, 'race_search_started_at'):
+                        delattr(ti, 'race_search_started_at')
+                    if hasattr(ti, 'race_search_id'):
+                        delattr(ti, 'race_search_id')
                     ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
-                    break
+                    return
                 ctx.ctrl.swipe(x1=20, y1=1000, x2=20, y2=850, duration=1000, name="")
                 time.sleep(1)
                 img = ctx.ctrl.get_screen()

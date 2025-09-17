@@ -193,10 +193,14 @@ def script_cultivate_main_menu(ctx: UmamusumeContext):
                     ti.race_search_started_at = time.time()
                     ti.race_search_id = race_id
                 elif time.time() - ti.race_search_started_at > 30:
-                    log.info("Skipping race")
-                    op.race_id = 0
-                    op.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN
-                    ctx.cultivate_detail.turn_info.parse_train_info_finish = False
+                    try:
+                        if getattr(ctx.task.detail, 'extra_race_list', None) is ctx.cultivate_detail.extra_race_list:
+                            ctx.cultivate_detail.extra_race_list = list(ctx.cultivate_detail.extra_race_list)
+                        if race_id and race_id in ctx.cultivate_detail.extra_race_list:
+                            ctx.cultivate_detail.extra_race_list.remove(race_id)
+                    except Exception as e:
+                        log.debug(f"fail: {e}")
+                    ctx.cultivate_detail.turn_info.turn_operation = None
                     if hasattr(ti, 'race_search_started_at'):
                         delattr(ti, 'race_search_started_at')
                     if hasattr(ti, 'race_search_id'):
@@ -549,13 +553,14 @@ def script_cultivate_race_list(ctx: UmamusumeContext):
                 ti.race_search_id = current_race_id
             while True:
                 if time.time() - ti.race_search_started_at > 30:
-                    log.warning("⏱️ Race search timeout (30s). Skipping race and returning to training")
-                    # Set to UNKNOWN to allow AI to pick training; avoid hardcoding Speed
-                    op = ctx.cultivate_detail.turn_info.turn_operation
-                    op.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN
-                    op.race_id = 0
-                    ctx.cultivate_detail.turn_info.parse_train_info_finish = False
-                    # Reset timer attributes
+                    try:
+                        if getattr(ctx.task.detail, 'extra_race_list', None) is ctx.cultivate_detail.extra_race_list:
+                            ctx.cultivate_detail.extra_race_list = list(ctx.cultivate_detail.extra_race_list)
+                        if current_race_id and current_race_id in ctx.cultivate_detail.extra_race_list:
+                            ctx.cultivate_detail.extra_race_list.remove(current_race_id)
+                    except Exception as e:
+                        log.debug(f"Race removal error: {e}")
+                    ctx.cultivate_detail.turn_info.turn_operation = None
                     if hasattr(ti, 'race_search_started_at'):
                         delattr(ti, 'race_search_started_at')
                     if hasattr(ti, 'race_search_id'):
@@ -577,24 +582,20 @@ def script_cultivate_race_list(ctx: UmamusumeContext):
                     return
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 if not compare_color_equal(img[1006, 701], [211, 209, 219]):
-                    log.warning(f"❌ Target Race Not Found - Race ID: {race_id}")
-
-                    if hasattr(ti, 'race_search_started_at') and (time.time() - ti.race_search_started_at > 30):
-                        op = ctx.cultivate_detail.turn_info.turn_operation
-                        op.turn_operation_type = TurnOperationType.TURN_OPERATION_TYPE_UNKNOWN
-                        op.race_id = 0
-                        ctx.cultivate_detail.turn_info.parse_train_info_finish = False
-
-                        if hasattr(ti, 'race_search_started_at'):
-                            delattr(ti, 'race_search_started_at')
-                        if hasattr(ti, 'race_search_id'):
-                            delattr(ti, 'race_search_id')
-                        ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
-                        return
-                    if ctx.cultivate_detail.turn_info.turn_operation.race_id == 0:
-                        ctx.cultivate_detail.turn_info.turn_operation.turn_operation_type = ctx.cultivate_detail.turn_info.turn_operation.turn_operation_type_replace
+                    try:
+                        if getattr(ctx.task.detail, 'extra_race_list', None) is ctx.cultivate_detail.extra_race_list:
+                            ctx.cultivate_detail.extra_race_list = list(ctx.cultivate_detail.extra_race_list)
+                        if race_id and race_id in ctx.cultivate_detail.extra_race_list:
+                            ctx.cultivate_detail.extra_race_list.remove(race_id)
+                    except Exception as e:
+                        log.debug(f"fail2: {e}")
+                    ctx.cultivate_detail.turn_info.turn_operation = None
+                    if hasattr(ti, 'race_search_started_at'):
+                        delattr(ti, 'race_search_started_at')
+                    if hasattr(ti, 'race_search_id'):
+                        delattr(ti, 'race_search_id')
                     ctx.ctrl.click_by_point(RETURN_TO_CULTIVATE_MAIN_MENU)
-                    break
+                    return
                 ctx.ctrl.swipe(x1=20, y1=1000, x2=20, y2=850, duration=1000, name="")
                 time.sleep(1)
                 img = ctx.ctrl.get_screen()

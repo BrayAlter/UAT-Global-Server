@@ -673,11 +673,7 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                         except Exception as e:
                             log.debug(f"OCR failed: {e}")
                         
-                        if ocr_race_id == race_id:
-                            ctx.ctrl.click(match_result.center_point[0], match_result.center_point[1],
-                                           "Select race: " + str(RACE_LIST[race_id][1]))
-                            return True
-                        elif template_success and (ocr_race_id is None):
+                        if (ocr_race_id == race_id) or template_success:
                             ctx.ctrl.click(match_result.center_point[0], match_result.center_point[1],
                                            "Select race: " + str(RACE_LIST[race_id][1]))
                             return True

@@ -8,6 +8,7 @@ I will do what I can to iron out everything before then.
 But when a new scenario shows up (Make a new track, grand live ect ect), I need **YOUR** help to make a **fork** to deal with that.  
 
 I will be relying on you guys to automate the future senarios. 🙏
+
 If not I guess ill be stuck playing URA lmao
 
 # 🏇 Umamusume Auto Trainer (Global Server Edition)
@@ -51,7 +52,7 @@ This project is a **Global Server adaptation** of the original China Server vers
     - **Pretty much everything you need to do in a career run**
 
 - ✅ **Completely hands off**: Recover tp, Starting runs, finding the right guest card
-  - Everything is automated you can just afk for **DAYS** until legacy umas are full
+  - Everything is automated you can just afk for **DAYS** until legacy umas are full (fixing "Its a new day" tonight)
 
 
 - ✅ **Saving of presets**: Save training parameters for easy access in future runs 

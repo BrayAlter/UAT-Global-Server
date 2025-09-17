@@ -47,12 +47,13 @@ This project is a **Global Server adaptation** of the original China Server vers
     - **Claw machine**
     - **Running styles** 
     - **Alarm clock usage** 
-    - **Building friendship and rainbow trainings** 
-    - **Optimal event choices (Knows when to build friendship/recover energy)** 
-    - **Pretty much everything you need to do in a career run**
+    - **Building fiendship early, focus on rainbows later** 
+    - **Optimal event choices (Knows when to build friendship/recover energy and mood)** 
+    - **Skipping bad turns with wit training**
+
 
 - ✅ **Completely hands off**: Recover tp, Starting runs, finding the right guest card
-  - Everything is automated you can just afk for **DAYS** until legacy umas are full (fixing "Its a new day" tonight)
+  - Everything is automated you can just afk for **DAYS** until legacy umas are full
 
 
 - ✅ **Saving of presets**: Save training parameters for easy access in future runs 

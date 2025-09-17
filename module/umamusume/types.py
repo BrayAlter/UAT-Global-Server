@@ -41,6 +41,8 @@ class TrainingInfo:
     will_incr: int
     intelligence_incr: int
     skill_point_incr: int
+    # not maxxed or rainbow
+    relevant_count: int
 
     def __init__(self):
         self.speed_incr = 0
@@ -50,6 +52,7 @@ class TrainingInfo:
         self.intelligence_incr = 0
         self.skill_point_incr = 0
         self.support_card_info_list = []
+        self.relevant_count = 0
 
     def log_training_info(self, scenario_type: ScenarioType):
         #useless for now

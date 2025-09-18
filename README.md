@@ -54,9 +54,17 @@ This project is a **Global Server adaptation** of the original China Server vers
 
 - ✅ **Completely hands off**: Recover tp, Starting runs, finding the right guest card
   - Everything is automated you can just afk for **DAYS** until legacy umas are full
+  - Handles everything from disconnections to the game crashing. The show will go on as long as there isn't a new update.
+  - Supports background play via emulators.
 
 
 - ✅ **Saving of presets**: Save training parameters for easy access in future runs 
+
+## 🚨 **Safety**
+- Question: Is this safe?
+- Answer: Safer than the steam release (All of your processes are transparent lmao), I have done what I can to humanize the inputs. **BUT** if they decide to put in the effort they **WILL** find you. It is near impossible to simulate perfect human behavior with code so use at your own risk. I take no responsibility.  **HIDING BEHIND A EMULATOR DOES NOT MAKE YOU UNDETECTABLE**
+
+running this 24/7 looks sus as hell so I would suggest turning it off for a few hours every day.
 
 ## 📦 **Installation & Setup**
 

@@ -80,7 +80,8 @@ TITLE = [
     "Auto Formation", # TITLE[35]
     "Battle Confirmation", # TITLE[36]
     "Rewards Collected", # TITLE[37] after career if theres story
-    "Event Story Unlocked" # TITLE[38] after career if theres story
+    "Event Story Unlocked", # TITLE[38] after career if theres story
+    "Connection Error" #39 
 ]
 
 
@@ -155,7 +156,8 @@ def script_info(ctx: UmamusumeContext):
             elif image_match(screen, REF_RECOVER_TP_3).find_match or\
                  image_match(screen, REF_RECOVER_TP_3_CARROT).find_match:
                 ctx.ctrl.click_by_point(USE_TP_DRINK_RESULT_CLOSE)
-
+        if title_text == TITLE[39]: #disconnect
+            ctx.ctrl.click(630, 840, "reconnect")
         if title_text == TITLE[0]: #race details
             ctx.ctrl.click_by_point(CULTIVATE_GOAL_RACE_INTER_3)
             time.sleep(1)

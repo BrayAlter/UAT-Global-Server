@@ -659,12 +659,10 @@ def find_race(ctx: UmamusumeContext, img, race_id: int = 0) -> bool:
                             # Try with preprocessed template (wiki image optimization)
                             try:
                                 preprocessed_template = preprocess_wiki_image_for_ingame_matching(template_img.copy())
-                                # Create a temporary template with preprocessed image
-                                from bot.base.resource import Template
-                                temp_template = Template(f"preprocessed_{race_id}", UMAMUSUME_RACE_TEMPLATE_PATH)
+                                class _Temp: pass
+                                temp_template = _Temp()
                                 temp_template.template_image = preprocessed_template
-                                
-                                # Try without threshold parameter first
+                                temp_template.image_match_config = target_race_template.image_match_config
                                 preprocessed_match = image_match(race_name_img, temp_template)
                                 if preprocessed_match.find_match:
                                     template_success = True

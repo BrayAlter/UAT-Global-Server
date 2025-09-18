@@ -64,7 +64,8 @@ This project is a **Global Server adaptation** of the original China Server vers
 - Question: Is this safe?
 - Answer: Safer than the steam release (All of your processes are transparent lmao), I have done what I can to humanize the inputs. **BUT** if they decide to put in the effort they **WILL** find you. It is near impossible to simulate perfect human behavior with code so use at your own risk. I take no responsibility.  **HIDING BEHIND A EMULATOR DOES NOT MAKE YOU UNDETECTABLE**
 
-running this 24/7 looks sus as hell so I would suggest turning it off for a few hours every day.
+running this 24/7 looks sus as hell so I would suggest turning it off for a few hours every day. 
+(im just gonna risk it and run it 24/7 ill let you guys know if i get banned)
 
 ## 📦 **Installation & Setup**
 

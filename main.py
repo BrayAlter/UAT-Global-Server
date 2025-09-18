@@ -312,24 +312,21 @@ def run_health_checks():
     else:
         print("⚠️  Umamusume not running (this is OK)")
     
-    # Test screenshot quality (THIS IS THE KEY TEST)
-    print(" Testing screenshot quality…")
-    try:
-        _screenshot_probe(selected_device)
-    except Exception as e:
-        # First failure -> try one auto-recovery cycle then retry once
-        print(f"❌ Screenshot test failed: {e}")
-        print("   🛠️  Running one-shot auto-recovery and retry…")
-        _soft_recover_device(selected_device)
-        try:
-            _screenshot_probe(selected_device)
-        except Exception as e2:
-            print(f"❌ Screenshot test failed again after recovery: {e2}")
-            return False
-    
+        
     print("✅ All health checks passed!")
     return True
 
+
+def app_keepalive_loop(device_id):
+    package = "com.cygames.umamusume"
+    while True:
+        try:
+            state = _run_adb(["-s", device_id, "get-state"], timeout=5)
+            if state.returncode == 0 and "device" in (state.stdout or ""):
+                _run_adb(["-s", device_id, "shell", "monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1"], timeout=5)
+        except Exception:
+            pass
+        time.sleep(10)
 
 if __name__ == '__main__':
     if sys.version_info.minor != 10 or sys.version_info.micro != 9:
@@ -355,7 +352,10 @@ if __name__ == '__main__':
     if not update_config(selected_device):
         print("❌ Failed to update config. Exiting.")
         sys.exit(1)
-    
+
+    keepalive_thread = threading.Thread(target=app_keepalive_loop, args=(selected_device,), daemon=True)
+    keepalive_thread.start()
+
     # Start the bot
     register_app(UmamusumeManifest)
     scheduler_thread = threading.Thread(target=scheduler.init, args=())

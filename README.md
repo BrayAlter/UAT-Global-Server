@@ -1,5 +1,7 @@
+Hello bray I'll be detaching this fork for now since im 99% sure ur not coming back
+
 # ⚠️🚨 !!ATTENTION!! 🚨⚠️  
-### THE ORGINAL CREATOR IS MISSING IN ACTION  
+### THE [ORIGINAL CREATOR](https://github.com/BrayAlter/UAT-Global-Server) IS MISSING IN ACTION 
 
 unfortunately I too will no longer have time to work on this so hopefully he returns soon
 
@@ -28,12 +30,7 @@ This project is a **Global Server adaptation** of the original China Server vers
 - **Original Author**: [@shiokaze](https://github.com/shiokaze/UmamusumeAutoTrainer)
 - **Original Repository**: [UmamusumeAutoTrainer](https://github.com/shiokaze/UmamusumeAutoTrainer) (China Server)
 
-### **This Project**
-- **Global Server Adaptation**: [UAT-Global-Server](https://github.com/BrayAlter/UAT-Global-Server)
-- **Based on**: Original China Server version
-- **Enhancements**: 70% translation, improved UI, Global Server compatibility
-
-**Please respect the original author's work while contributing improvements.**
+-This is now a detatced fork of [UmamusumeAutoTrainer](https://github.com/BrayAlter/UAT-Global-Server)
 
 
 ---
@@ -69,16 +66,9 @@ running this 24/7 looks sus as hell so I would suggest turning it off for a few 
 
 ## 📦 **Installation & Setup**
 
-### **Option 1: Download Release (Recommended)**
-1. Go to [Releases](https://github.com/BrayAlter/UAT-Global-Server/releases)
-2. Download the latest release zip file
-3. Extract and run `UmamusumeAutoTrainer.exe`
-
-### **Option 2: Build from Source**
-
 #### **Clone Repository**
 ```bash
-git clone https://github.com/BrayAlter/UAT-Global-Server.git
+git clone https://github.com/oofmatoes/UAT-Global-Server
 cd UAT-Global-Server
 ```
 
@@ -96,22 +86,15 @@ cd UAT-Global-Server
 
 ### **Launch**
 ```bash
-# Run the application
-./run.ps1
+# Install development dependencies
+pip install -r requirements.txt
+
+# Run in development mode
+python main.py
 ```
 
-The application will automatically:
-1. 🔍 **Scan for ADB devices**
-2. 📱 **Show available devices**
-3. 🎮 **Detect devices with Umamusume running**
-4. ✅ **Let you select your preferred device**
-5. ⚙️ **Auto-update configuration**
-6. 🚀 **Start the web interface**
+---
 
-#### **Preflight Health Checks**
-- Verifies ADB connectivity and device responsiveness before starting the bot
-- Validates screenshot stream quality to avoid running on corrupted/static images
-- Surfaces clear, English error messages for quick diagnosis
 
 **Success indicator:**
 ```
@@ -134,7 +117,6 @@ Access the web interface at `http://127.0.0.1:8071` to configure and start tasks
 1. **Graphics**: Must be set to "Standard", not "Basic"
 2. **Training Setup**: **Manually select** Uma Musume, Legacy, and Support Cards in-game before starting
 3. **Support Cards**: Avoid friend cards (no specific outing strategy)
-4. **Starting Position**: Be at Career Menu (where the UI Shows Training, Race, Recreation) 
 
 ### **Website Settings RECOMMENDED**
 - **Attribute Setting**: Set desired target attributes in the UI. If unsure, do a manual run first and copy the resulting attributes into the UAT interface.
@@ -165,11 +147,6 @@ Access the web interface at `http://127.0.0.1:8071` to configure and start tasks
 #### **Web Interface Issues**
 - **Module loading fails**: Ensure proper file permissions and paths
 
-### **Error Recovery**
-1. **Stuck interfaces**: Take screenshot, attach error logs
-2. **Recognition failures**: Manual intervention, then restart
-3. **Connection resets**: Restart both emulator and script
-
 
 ## 🤝 **Contributing**
 
@@ -180,13 +157,3 @@ We welcome contributions! If you find issues or have improvements:
 3. **Make your changes**
 4. **Submit a pull request**
 
-### **Development Setup**
-```bash
-# Install development dependencies
-pip install -r requirements.txt
-
-# Run in development mode
-python main.py
-```
-
----

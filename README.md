@@ -1,6 +1,31 @@
-# 🏇 Umamusume Auto Trainer (Global Server Edition)
+# THIS PROJECT IS NO LONGER MAINTAINED
 
-**Uma Musume Pretty Derby Global Server Automatic Career Tool**
+## Why?
+**Because the economy in my country is in such trouble that it is affecting my real life economy... so I am not sure if I will continue this project in the future.**
+
+## Is anyone continuing this project?
+**Yes, there is someone continuing this project, please check it at :**
+
+***https://github.com/oofmatoes/UAT-Global-Server***
+
+**Please Support Him**
+
+## Final Words
+**Thank you to everyone who has enthusiastically supported, liked, and starred this project.**
+
+**I apologize for the lack of any news regarding this project in the past few months.**
+
+***See you again trainers***
+
+
+---
+
+---
+
+---
+
+
+## Uma Musume Pretty Derby Global Server Automatic Career Tool
 
 > **From China server automation to global server compatibility** - A complete transformation with enhanced features, improved UI, and robust automation capabilities.
 >
